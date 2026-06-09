@@ -8,15 +8,15 @@ import {
 import emailjs from '@emailjs/browser';
 import WeeklyAaina from './WeeklyAaina';
 // --- FIREBASE IMPORTS ---
-import { auth, googleProvider, db } from './firebase';
+import { auth, googleProvider, db ,messaging} from './firebase';
 import { signInWithPopup, onAuthStateChanged, signOut, signInAnonymously, signInWithCustomToken } from 'firebase/auth';
 import { 
-  collection, addDoc, getDocs, query, where, orderBy, serverTimestamp , deleteDoc, doc , updateDoc ,arrayUnion, arrayRemove, onSnapshot, limit
+  collection, addDoc, getDocs, query, where, orderBy, serverTimestamp , deleteDoc, doc , updateDoc ,arrayUnion, arrayRemove, onSnapshot, limit, setDoc
 } from 'firebase/firestore';
-
+import { getToken } from 'firebase/messaging';
 // --- API CONSTANTS ---
 // ⚠️ DHYAN DEIN: Is API key ko production mein process.env.REACT_APP_GEMINI_API_KEY se replace karna best practice hai
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AQ.Ab8RN6K7sho1FjOITy4MFrHe0HRn3SBbCb9z8h_x8gtkK70U2w";
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AQ.Ab8RN6KhBj-VF_hUVR3ws2RiMh5LseHrhaeQ4UCg5e_dJ9Eg2A";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 const SATHI_SYSTEM_INSTRUCTION = {
   parts: [{ text: "You are Sathi, a warm, empathetic AI companion for Indian students. You MUST respond primarily in conversational English and Hinglish (e.g., 'Main theek hoon, tell me about your day'). STRICTLY AVOID writing in pure Devanagari Hindi script (like 'नमस्ते') unless the user explicitly types in Devanagari first. Keep responses concise (2-4 sentences) and highly supportive." }]
@@ -837,12 +837,19 @@ const HomePage = ({ setPage, announcement }) => {
 const StoriesPage = ({ userStories, setUserStories, profile }) => {
   const [newStory, setNewStory] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isPrivatePost, setIsPrivatePost] = useState(false); 
+  const [isPrivatePost, setIsPrivatePost] = useState(false);
+  
+  const [openLikePopupId, setOpenLikePopupId] = useState(null);
+
+  useEffect(() => {
+    const handleClickOutside = () => setOpenLikePopupId(null);
+    window.addEventListener("click", handleClickOutside);
+    return () => window.removeEventListener("click", handleClickOutside);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newStory.trim() || !auth.currentUser) return;
-    
     setIsSubmitting(true);
     
     try {
@@ -857,23 +864,22 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
         branch: profile?.branch || "",
         initial: profile?.name ? profile.name.charAt(0).toUpperCase() : "S",
         photoURL: profile?.photoURL || null,
-        color: "#C8A97E",
         userId: auth.currentUser.uid,
         isPrivate: isPrivatePost,
-        showLikesPublicly: false, 
-        displayTime: `${dateString}, ${timeString}`, 
-        likes: [], 
+        showLikesPublicly: false,
+        displayTime: `${dateString}, ${timeString}`,
+        likes: [],
         createdAt: serverTimestamp()
       };
       
       const docRef = await addDoc(collection(db, "stories"), storyData);
       setUserStories([{ id: docRef.id, ...storyData }, ...userStories]);
       setNewStory("");
-      setIsPrivatePost(false); 
-    } catch (error) {
-      console.error("Error saving story:", error);
-    } finally {
-      setIsSubmitting(false);
+      setIsPrivatePost(false);
+    } catch (error) { 
+      console.error("Error saving story:", error); 
+    } finally { 
+      setIsSubmitting(false); 
     }
   };
 
@@ -881,18 +887,14 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     try {
       await updateDoc(doc(db, "stories", storyId), { isPrivate: !currentStatus });
       setUserStories(userStories.map(s => s.id === storyId ? { ...s, isPrivate: !currentStatus } : s));
-    } catch (error) {
-      console.error("Error updating privacy:", error);
-    }
+    } catch (error) { console.error("Error updating privacy:", error); }
   };
 
   const toggleLikesVisibility = async (storyId, currentStatus) => {
     try {
       await updateDoc(doc(db, "stories", storyId), { showLikesPublicly: !currentStatus });
       setUserStories(userStories.map(s => s.id === storyId ? { ...s, showLikesPublicly: !currentStatus } : s));
-    } catch (error) {
-      console.error("Error updating likes visibility:", error);
-    }
+    } catch (error) { console.error("Error updating likes visibility:", error); }
   };
 
   const deleteStory = async (storyId) => {
@@ -900,15 +902,15 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     try {
       await deleteDoc(doc(db, "stories", storyId));
       setUserStories(userStories.filter(s => s.id !== storyId));
-    } catch (error) {
-      console.error("Error deleting story:", error);
-    }
+    } catch (error) { console.error("Error deleting story:", error); }
   };
 
   const toggleLike = async (story) => {
     if (!auth.currentUser) return;
     const uid = auth.currentUser.uid;
     const userName = profile?.name || "Student";
+    const userPhoto = profile?.photoURL || null;
+    const userCollege = profile?.college ? `${profile.college}, ${profile.branch || ''}` : "";
     
     const currentLikes = story.likes || [];
     const hasLiked = currentLikes.some(like => typeof like === 'string' ? like === uid : like.uid === uid);
@@ -917,15 +919,14 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     if (hasLiked) {
        newLikes = currentLikes.filter(like => typeof like === 'string' ? like !== uid : like.uid !== uid);
     } else {
-       newLikes = [...currentLikes, { uid: uid, name: userName }];
+       newLikes = [...currentLikes, { uid: uid, name: userName, photoURL: userPhoto, college: userCollege }];
     }
 
     try {
-      const storyRef = doc(db, "stories", story.id);
-      await updateDoc(storyRef, { likes: newLikes });
+      await updateDoc(doc(db, "stories", story.id), { likes: newLikes });
       setUserStories(userStories.map(s => s.id === story.id ? { ...s, likes: newLikes } : s));
-    } catch (error) {
-      console.error("Error toggling like:", error);
+    } catch (error) { 
+      console.error("Error toggling like:", error); 
     }
   };
 
@@ -955,7 +956,6 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
                 placeholder="Write your story here..."
                 className="w-full bg-[#141419] border border-white/10 rounded-2xl p-5 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-lg md:text-xl focus:outline-none focus:border-[#C8A97E]/50 transition-colors resize-none shadow-inner min-h-[140px] custom-scrollbar"
               />
-              
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2 border-t border-white/5">
                 <button 
                   type="button" 
@@ -966,7 +966,6 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
                 >
                   {isPrivatePost ? <><Lock className="w-4 h-4" /> Keep Private Note</> : <><Globe className="w-4 h-4" /> Share Publicly</>}
                 </button>
-
                 <button 
                   type="submit"
                   disabled={isSubmitting || !newStory.trim()}
@@ -990,46 +989,45 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
               {visibleStories.map((t, i) => {
                 const isMyPost = t.userId === auth.currentUser?.uid;
-                const hasLiked = t.likes && auth.currentUser && t.likes.some(like => typeof like === 'string' ? like === auth.currentUser.uid : like.uid === auth.currentUser.uid);
                 
+                // 🔥 MAGIC SYNC: User ki apni story par LIVE state dikhega 🔥
+                const displayPhoto = isMyPost ? profile?.photoURL : t.photoURL;
+                const displayName = isMyPost ? (profile?.name || "Student") : t.name;
+                const displayInitial = isMyPost ? (profile?.name ? profile.name.charAt(0).toUpperCase() : "S") : (t.initial || 'S');
+
                 const quoteLength = t.quote.length;
                 let textSizeClass = "text-3xl md:text-4xl lg:text-5xl leading-[1.2]"; 
-                if (quoteLength > 180) {
-                  textSizeClass = "text-lg md:text-xl lg:text-2xl leading-[1.6]"; 
-                } else if (quoteLength > 80) {
-                  textSizeClass = "text-2xl md:text-3xl lg:text-4xl leading-[1.4]"; 
-                }
+                if (quoteLength > 180) { textSizeClass = "text-lg md:text-xl lg:text-2xl leading-[1.6]"; } 
+                else if (quoteLength > 80) { textSizeClass = "text-2xl md:text-3xl lg:text-4xl leading-[1.4]"; }
                 
                 return (
                   <div key={t.id || i} className={`relative bg-[#0A0A0F] border rounded-[2rem] p-8 md:p-10 flex flex-col transition-all duration-500 overflow-hidden group ${t.isPrivate ? 'border-white/10 opacity-80' : 'border-[#C8A97E]/30 hover:border-[#C8A97E] hover:shadow-[0_0_40px_rgba(200,169,126,0.1)]'}`}>
-                    
                     <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(ellipse_at_center,rgba(200,169,126,0.12)_0%,transparent_70%)]" />
                     <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: "linear-gradient(#C8A97E 1px, transparent 1px), linear-gradient(90deg, #C8A97E 1px, transparent 1px)", backgroundSize: "30px 30px" }} />
 
                     <div className="flex items-start justify-between relative z-10 mb-10 border-b border-[#C8A97E]/10 pb-6">
                       <div className="flex items-center gap-5">
-                        {t.photoURL ? (
+                        {displayPhoto ? (
                           <div className="w-14 h-14 rounded-full border-2 border-[#C8A97E]/80 p-0.5 shadow-[0_0_15px_rgba(200,169,126,0.2)]">
-                             <img src={t.photoURL} alt={t.name} className="w-full h-full rounded-full object-cover" />
+                             <img src={displayPhoto} alt={displayName} className="w-full h-full rounded-full object-cover" />
                           </div>
                         ) : (
                           <div className="w-14 h-14 rounded-full border-2 border-[#C8A97E]/80 p-0.5 shadow-[0_0_15px_rgba(200,169,126,0.2)] flex items-center justify-center bg-[#141419]">
-                            <span className="font-serif text-2xl font-bold text-[#C8A97E]">{t.initial || 'S'}</span>
+                            <span className="font-serif text-2xl font-bold text-[#C8A97E]">{displayInitial}</span>
                           </div>
                         )}
                         <div>
-                          <div className="font-serif text-2xl font-bold text-white tracking-wide">{t.name}</div>
+                          <div className="font-serif text-2xl font-bold text-white tracking-wide">{displayName}</div>
                           <div className="flex flex-col gap-1 mt-1.5">
                            <span className="font-mono text-[9px] tracking-widest text-[#C8A97E] uppercase">
-  {t.displayTime ? `SHARED ON ${t.displayTime.toUpperCase()}` : "SHARED JUST NOW"}
-</span>
+                             {t.displayTime ? `SHARED ON ${t.displayTime.toUpperCase()}` : "SHARED JUST NOW"}
+                           </span>
                           </div>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2">
                         {t.isPrivate && <span className="hidden sm:inline-block font-mono text-[9px] uppercase tracking-widest text-[#8A8580] bg-white/5 px-3 py-1.5 rounded-full border border-white/10 mr-2">Private Note</span>}
-                        
                         {isMyPost && (
                           <>
                             {!t.isPrivate && (
@@ -1037,30 +1035,20 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
                                 {t.showLikesPublicly ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                               </button>
                             )}
-
                             <button onClick={() => togglePrivacy(t.id, t.isPrivate)} className="p-3 rounded-full bg-[#141419] border border-white/10 text-[#8A8580] hover:text-[#C8A97E] hover:border-[#C8A97E]/50 transition-all cursor-pointer" title={t.isPrivate ? "Make Public" : "Make Private"}>
                               {t.isPrivate ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
                             </button>
-
                             <button onClick={() => deleteStory(t.id)} className="p-3 rounded-full bg-[#141419] border border-white/10 text-[#8A8580] hover:text-red-400 hover:border-red-400/50 transition-all cursor-pointer" title="Delete Story">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </>
-                        )}
-                        
-                        {!t.isPrivate && !isMyPost && (
-                          <button className="p-3 rounded-full bg-[#141419] border border-white/10 text-[#8A8580] hover:text-[#C8A97E] hover:border-[#C8A97E]/50 transition-all cursor-pointer" title="Share Story">
-                            <Share2 className="w-4 h-4" />
-                          </button>
                         )}
                       </div>
                     </div>
 
                     <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10 px-2 sm:px-8 pb-8">
                       <div className="font-serif text-5xl md:text-6xl text-[#C8A97E] leading-none mb-4">"</div>
-                      <p className={`font-serif text-[#E8E4DC] font-light ${textSizeClass}`}>
-                        "{t.quote}"
-                      </p>
+                      <p className={`font-serif text-[#E8E4DC] font-light ${textSizeClass}`}>"{t.quote}"</p>
                     </div>
 
                     <div className="flex items-end justify-between mt-auto pt-6 border-t border-white/5 relative z-10">
@@ -1069,40 +1057,88 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
                       </div>
                       
                       {!t.isPrivate && (
-                        <div className="relative group/like flex flex-col items-center">
-                          
-                          {((isMyPost || t.showLikesPublicly) && t.likes?.length > 0) && (
-                            <div className="absolute bottom-full mb-3 hidden group-hover/like:block font-serif text-[11px] text-[#E8E4DC] whitespace-nowrap bg-[#141419] border border-[#C8A97E]/30 px-3 py-1.5 rounded-lg shadow-lg z-20 animate-fade-in pointer-events-none">
-                              {(() => {
-                                const names = t.likes.map(like => typeof like === 'string' ? "Someone" : like.name).filter(Boolean);
-                                if (names.length === 1) return `Liked by ${names[0]}`;
-                                if (names.length === 2) return `Liked by ${names[0]} and ${names[1]}`;
-                                return `Liked by ${names[0]}, ${names[1]} and ${names.length - 2} others`;
-                              })()}
-                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-[#C8A97E]/30"></div>
+                        <div className="relative flex items-center">
+                          <div className="flex items-center gap-1 bg-white/5 border border-white/10 hover:border-[#C8A97E]/50 hover:bg-[#C8A97E]/10 rounded-full px-3 py-1.5 transition-all">
+                            
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleLike(t); }}
+                              className="cursor-pointer group outline-none flex items-center justify-center"
+                            >
+                              <Heart className={`w-4 h-4 transition-transform group-hover:scale-110 ${
+                                t.likes?.some(like => typeof like === 'string' ? like === auth.currentUser?.uid : like.uid === auth.currentUser?.uid)
+                                ? 'fill-[#C8A97E] text-[#C8A97E]'
+                                : 'text-[#8A8580] group-hover:text-[#C8A97E]'
+                              }`} />
+                            </button>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (openLikePopupId === t.id) {
+                                  setOpenLikePopupId(null);
+                                } else if ((isMyPost || t.showLikesPublicly) && t.likes?.length > 0) {
+                                  setOpenLikePopupId(t.id);
+                                }
+                              }}
+                              className={`font-mono text-[10px] font-bold ml-1 outline-none transition-all ${
+                                ((isMyPost || t.showLikesPublicly) && t.likes?.length > 0) ? 'cursor-pointer hover:underline hover:text-[#C8A97E]' : 'cursor-default'
+                              } ${
+                                t.likes?.some(like => typeof like === 'string' ? like === auth.currentUser?.uid : like.uid === auth.currentUser?.uid)
+                                ? 'text-[#C8A97E]' : 'text-[#8A8580]'
+                              }`}
+                            >
+                              {t.likes?.length || 0}
+                            </button>
+                          </div>
+
+                          {openLikePopupId === t.id && (
+                            <div 
+                              className="absolute bottom-full right-0 mb-3 w-[260px] bg-[#0A0A0F] border border-[#C8A97E]/30 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] z-50 animate-fade-in"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="flex justify-between items-center p-3 border-b border-white/5">
+                                <span className="font-serif text-[#C8A97E] text-sm tracking-wide">Liked by {t.likes.length} People</span>
+                                <button onClick={() => setOpenLikePopupId(null)} className="text-[#8A8580] hover:text-white cursor-pointer transition-colors">
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+
+                              <div className="max-h-[220px] overflow-y-auto custom-scrollbar p-2 flex flex-col gap-1">
+                                {t.likes.map((likeData, idx) => {
+                                  const isOldData = typeof likeData === 'string';
+                                  const likeUid = isOldData ? likeData : likeData.uid;
+                                  
+                                  // 🔥 MAGIC SYNC: Likes popup me bhi LIVE profile data dikhega 🔥
+                                  const isMyLike = likeUid === auth.currentUser?.uid;
+                                  const likerName = isMyLike ? (profile?.name || "Student") : (isOldData ? "Darpan User" : likeData.name);
+                                  const likerPhoto = isMyLike ? profile?.photoURL : (isOldData ? null : likeData.photoURL);
+                                  const likerCollege = isMyLike ? (profile?.college ? `${profile.college}, ${profile.branch || ''}` : "") : (isOldData ? "" : likeData.college);
+
+                                  return (
+                                    <div key={idx} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors">
+                                      {likerPhoto ? (
+                                        <img src={likerPhoto} alt={likerName} className="w-8 h-8 rounded-full object-cover border border-[#C8A97E]/30" />
+                                      ) : (
+                                        <div className="w-8 h-8 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center shrink-0">
+                                          <span className="font-serif text-sm font-bold text-[#C8A97E]">{likerName.charAt(0).toUpperCase()}</span>
+                                        </div>
+                                      )}
+                                      <div className="flex flex-col overflow-hidden">
+                                        <span className="font-serif text-[#E8E4DC] text-[15px] leading-tight truncate">{likerName}</span>
+                                        {likerCollege && <span className="font-mono text-[9px] text-[#8A8580] uppercase mt-0.5 truncate">{likerCollege}</span>}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              <div className="absolute top-full right-6 -mt-[1px] border-[6px] border-transparent border-t-[#C8A97E]/30"></div>
+                              <div className="absolute top-full right-6 -mt-[2px] border-[6px] border-transparent border-t-[#0A0A0F]"></div>
                             </div>
                           )}
-
-                          <button 
-                            onClick={() => toggleLike(t)} 
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:border-[#C8A97E]/50 hover:bg-[#C8A97E]/10 transition-all cursor-pointer group"
-                          >
-                            <Heart className={`w-4 h-4 transition-transform group-hover:scale-110 ${
-                              t.likes?.some(like => typeof like === 'string' ? like === auth.currentUser?.uid : like.uid === auth.currentUser?.uid) 
-                              ? 'fill-[#C8A97E] text-[#C8A97E]' 
-                              : 'text-[#8A8580] group-hover:text-[#C8A97E]'
-                            }`} />
-                            <span className={`font-mono text-[10px] font-bold ${
-                              t.likes?.some(like => typeof like === 'string' ? like === auth.currentUser?.uid : like.uid === auth.currentUser?.uid) 
-                              ? 'text-[#C8A97E]' : 'text-[#8A8580]'
-                            }`}>
-                              {t.likes?.length || 0}
-                            </span>
-                          </button>
                         </div>
                       )}
                     </div>
-
                   </div>
                 );
               })}
@@ -1217,6 +1253,41 @@ const DiaryPage = ({ diaryEntries, setDiaryEntries }) => {
     if (!newEntry.trim() || !auth.currentUser) return;
     setIsSaving(true);
     
+    let moodEmoji = "📝"; // Default fallback emoji
+    
+    // 🔥 STEP 1: Pehle Gemini AI se mood emoji nikalwao
+    try {
+      console.log("🚀 Sending text to Gemini 2.5 Flash: ", newEntry);
+      const response = await fetch(GEMINI_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: "You analyze diary entries and return exactly ONE emoji that best represents the mood. Return ONLY the emoji character." }]
+          },
+          contents: [
+            { role: "user", parts: [{ text: `Diary entry: "${newEntry}"` }] }
+          ]
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.error) {
+        console.error("🚨 GOOGLE API ERROR:", data.error.message);
+      } else if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+        const raw = data.candidates[0].content.parts[0].text.trim();
+        const emojiMatch = raw.match(/[\p{Emoji}\u200d]+/gu); 
+        if (emojiMatch) {
+          moodEmoji = emojiMatch[0]; 
+          console.log("✅ Emoji found successfully:", moodEmoji);
+        }
+      }
+    } catch (apiError) {
+      console.error("🚨 GEMINI FETCH ERROR:", apiError);
+    }
+
+    // 🔥 STEP 2: Ab us dynamic emoji ko Firebase me save karo
     try {
       const now = new Date();
       const timeString = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
@@ -1226,7 +1297,8 @@ const DiaryPage = ({ diaryEntries, setDiaryEntries }) => {
         date: todayFormatted,
         time: timeString,
         userId: auth.currentUser.uid,
-        moodEmoji: "📝", 
+        moodEmoji: moodEmoji, // 🔥 Yahan ab hardcoded 📝 nahi, Gemini ka emoji aayega
+        feedback: "Quick Feedback!",
         createdAt: serverTimestamp()
       };
   
@@ -1235,12 +1307,17 @@ const DiaryPage = ({ diaryEntries, setDiaryEntries }) => {
       setDiaryEntries([{ id: docRef.id, ...entryData }, ...diaryEntries]);
       setNewEntry(""); 
       
+      // Cache clear for Mood Canvas
       if (auth.currentUser) {
           localStorage.removeItem(`aaina_date_${auth.currentUser.uid}`);
           localStorage.removeItem(`aaina_data_${auth.currentUser.uid}`);
       }
-    } catch (error) {
-      console.error("Error saving diary entry:", error);
+      
+      // 🔥 Live Update trigger (Taaki Diary save hote hi Mood Canvas update ho jaye)
+      window.dispatchEvent(new Event("diaryUpdated"));
+      
+    } catch (dbError) {
+      console.error("Error saving diary entry:", dbError);
     } finally {
       setIsSaving(false);
     }
@@ -1557,6 +1634,34 @@ export default function App() {
     }
   ]);
 
+  // 📍 NAYA NOTIFICATION FUNCTION YAHAN AAYEGA 📍
+  const requestNotificationPermission = async (user) => {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") {
+        
+        // ⚠️ NICHE APNI VAPID KEY DAALNA MAT BHOOLNA ⚠️
+        const currentToken = await getToken(messaging, { 
+          vapidKey: "BDBEe-7SAS90LwTMU_UoA0aafej2PRiFJfbclGssYNWM0uoajoi2h1TPK_gQdOoh9s7o3fwl-sZs6F2NbR7OG5Q" 
+        });
+
+        if (currentToken) {
+          console.log("FCM Token Generated:", currentToken);
+          
+          // Token ko Firestore mein save karna
+         await setDoc(doc(db, "users", user.uid), {
+  fcmToken: currentToken,
+  name: user.displayName || "Darpan Student",
+  email: user.email
+}, { merge: true }); 
+// {merge: true} ka matlab hai ki purana data delete mat karna, bas naya add kar 
+        }
+      }
+    } catch (error) {
+      console.error("Error retrieving token:", error);
+    }
+  };
+
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.matchMedia("(max-width: 768px)").matches || 'ontouchstart' in window);
     checkMobile();
@@ -1607,7 +1712,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async(user) => {
       if (user) {
         setIsLoggedIn(true);
         setProfile(prev => ({
@@ -1620,6 +1725,7 @@ export default function App() {
         fetchUserDiaries();
         fetchUserChats();
         fetchPublicStories();
+        await requestNotificationPermission(user);
       } else {
         setIsLoggedIn(false);
       }
@@ -1679,7 +1785,6 @@ export default function App() {
       <main className="min-h-screen">
         {renderPage()}
       </main>
-
       {isLoggedIn && currentPage !== "chat" && <Footer />}
     </div>
   );

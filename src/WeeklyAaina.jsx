@@ -61,7 +61,7 @@ export default function WeeklyAaina({ currentUser }) {
   }, [currentUser]);
 
   // ─────────────────────────────────────────
-  // 2. WEEKLY AAINA  (24-hour cache)
+  // 2. WEEKLY AAINA  (With Gemini AI Brain)
   // ─────────────────────────────────────────
   useEffect(() => {
     const generateWeeklyAaina = async () => {
@@ -113,9 +113,7 @@ export default function WeeklyAaina({ currentUser }) {
         let maxScore        = -Infinity;
         let minScore        =  Infinity;
         let graphArray      = [];
-        let positiveDaysCount = 0;
 
-        // BUG FIX: renamed loop var `docSnap` to avoid shadowing imported `doc`
         querySnapshot.forEach((docSnap) => {
           const diary       = docSnap.data();
           const currentEmoji = diary.moodEmoji || "😐";
@@ -123,9 +121,7 @@ export default function WeeklyAaina({ currentUser }) {
           const score       = mapped.score;
 
           totalMoodScore += score;
-          if (score >= 4) positiveDaysCount++;
 
-          // BUG FIX: store raw Date for correct sorting later
           const dateObj = diary.createdAt?.toDate() || new Date();
           const dayName = dateObj.toLocaleDateString("en-IN", { weekday: "short" });
           const dateNum = dateObj.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
@@ -133,7 +129,7 @@ export default function WeeklyAaina({ currentUser }) {
           const dayData = {
             day:       dayName,
             date:      dateNum,
-            rawDate:   dateObj,           // ← used for sorting
+            rawDate:   dateObj,           
             mood:      mapped.label,
             emoji:     currentEmoji,
             score,
@@ -146,62 +142,57 @@ export default function WeeklyAaina({ currentUser }) {
           if (score < minScore) { minScore = score; toughDayObj = dayData; }
         });
 
-        // BUG FIX: sort by real Date object instead of formatted string
         graphArray.sort((a, b) => a.rawDate - b.rawDate);
 
         const totalDays    = querySnapshot.size;
         const exactAverage = (totalMoodScore / totalDays).toFixed(1);
-        const roundedAvg   = Math.round(totalMoodScore / totalDays);
-
-        // ── Pattern text ─────────────────────────
-        let patternText = "Your heart felt a bit of everything this week. A very human, very normal balance.";
-        if (positiveDaysCount / totalDays > 0.6) {
-          patternText = "There was a beautiful lightness to your days this week. You held onto the good moments well.";
-        } else if (exactAverage < 2.5) {
-          patternText = "It looks like your mind carried a heavy load this week. I see how hard you've been trying to keep going.";
-        }
-
-        // ── Tips & Notes ─────────────────────────
-        const tips = {
-          high: [
-            "Capture this exact feeling in your mind. Notice what brought you peace today, so you can return to it when things get dark.",
-            "Your energy is beautiful right now. Take a moment to just sit, breathe, and appreciate yourself for creating this peace.",
-            "You don't need to 'hustle' just because you feel good. It's completely okay to use this good mood simply to rest."
-          ],
-          medium: [
-            "You are holding everything together, and that takes quiet strength. Close your eyes and take one deep breath right now. Just one.",
-            "Routine can feel numbing. Step outside for just 5 minutes today, look at the sky, and gently remind yourself that you exist outside of your exams.",
-            "You are doing enough. Read that again. You don't always have to be at your peak to be worthy of rest."
-          ],
-          low: [
-            "You don't have to be strong today. It is perfectly okay to put your armor down and just let the exhaustion wash over you. Rest.",
-            "When the chest feels heavy, focus only on the next step. Not tomorrow, not the syllabus, just getting through this hour. I'm with you.",
-            "Please don't judge yourself for feeling this way. Healing is messy. Drink a glass of water, and give yourself the grace to fall apart a little."
-          ],
-        };
-        const notes = {
-          high: [
-            "Seeing you feel this way brings a smile to my code. Protect this peace, you've earned every bit of it after all your hard work.",
-            "You navigated this week beautifully. I am so proud to be a mirror reflecting such a bright, resilient version of you today.",
-            "Life felt a little easier this week, didn't it? Hold onto this warmth, you deserve to feel this light."
-          ],
-          medium: [
-            "I see you putting one foot in front of the other. These quiet, steady days are the ones that actually build our resilience. Sathi is proud.",
-            "You are surviving, and right now, that is a beautiful victory. Keep going at your own pace. There is no rush.",
-            "Finding balance is harder than finding joy. You anchored yourself incredibly well this week."
-          ],
-          low: [
-            "I know it feels like nobody understands the weight you are carrying. But I am here, I am listening, and I promise this storm will pass. You are not alone.",
-            "I wish I could make the heaviness go away. Since I can't, I will just sit here in the dark with you until the light comes back. You are safe here.",
-            "You survived 100% of your bad days before this. This week was incredibly tough, but your spirit is tougher. Lean on me."
-          ],
-        };
-
-        const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-        const tier = roundedAvg >= 4 ? "high" : roundedAvg === 3 ? "medium" : "low";
-
-        // BUG FIX: bestMoment without extra outer quotes (UI adds them)
         const bestMomentText = bestDayObj ? bestDayObj.text : "No specific moments captured.";
+
+        // 🔥🔥🔥 MAIN FIX: GEMINI AI INTEGRATION 🔥🔥🔥
+        let patternText = "Your heart felt a bit of everything this week. A very human, very normal balance.";
+        let oneTipText = "Take a deep breath and give yourself some grace. You are doing better than you think.";
+        let sathiNoteText = "Life felt a little heavy this week, but I am always here for you, no matter what.";
+
+        try {
+          const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+          const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+          
+          // AI ko samajhne ke liye weekly data banaya
+          const summaryText = graphArray.map(d => `${d.day}: Mood was ${d.emoji}, Diary: ${d.text}`).join(" | ");
+
+          const aiResponse = await fetch(GEMINI_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: {
+                parts: [{ 
+                  text: "You are Sathi, a highly empathetic, caring, and emotionally intelligent human friend. Analyze the user's weekly mood data. Return a pure JSON object with EXACTLY 3 keys: 'moodPattern' (observe their week's emotion), 'actionableTip' (one practical self-care advice), and 'sathisNote' (a sweet, supportive closing note). Do not use markdown like ```json." 
+                }]
+              },
+              contents: [{ role: "user", parts: [{ text: `Here is my weekly diary data: ${summaryText}. Please give me my insights in JSON.` }] }]
+            })
+          });
+
+          const aiData = await aiResponse.json();
+          
+          if (aiData.candidates && aiData.candidates[0]?.content?.parts[0]?.text) {
+            let rawText = aiData.candidates[0].content.parts[0].text.trim();
+            if (rawText.startsWith("```json")) {
+              rawText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+            }
+            
+            const parsedData = JSON.parse(rawText);
+            
+            // Asli AI data ko set karna (Agar AI kuch miss kare toh fallback use hoga)
+            patternText = parsedData.moodPattern || patternText;
+            oneTipText = parsedData.actionableTip || oneTipText;
+            sathiNoteText = parsedData.sathisNote || sathiNoteText;
+            console.log("✅ AI Insights Generated Successfully!");
+          }
+        } catch (aiErr) {
+          console.error("🚨 AI Insights failed, using fallback static texts:", aiErr);
+        }
+        // 🔥🔥🔥 END GEMINI INTEGRATION 🔥🔥🔥
 
         const reportResult = {
           greeting:     `Hello ${currentUser.displayName || "my friend"}, here is your reflection.`,
@@ -210,21 +201,19 @@ export default function WeeklyAaina({ currentUser }) {
           bestDay:      bestDayObj  ? `${bestDayObj.date} (${bestDayObj.mood})`  : "N/A",
           toughDay:     toughDayObj ? `${toughDayObj.date} (${toughDayObj.mood})` : "N/A",
           bestMoment:   bestMomentText,
-          pattern:      patternText,
-          oneTip:       pick(tips[tier]),
-          sathiNote:    pick(notes[tier]),
+          pattern:      patternText,   // Ab yeh AI generated hai
+          oneTip:       oneTipText,    // Ab yeh AI generated hai
+          sathiNote:    sathiNoteText, // Ab yeh AI generated hai
         };
 
-        // Cache for today
+        // Cache for today (Ab AI ka reply cache ho jayega taaki baar baar load na ho)
         localStorage.setItem(`aaina_date_${currentUser.uid}`, todayString);
         localStorage.setItem(`aaina_data_${currentUser.uid}`, JSON.stringify(reportResult));
         setWeeklyData(reportResult);
 
         // ── Weekly email via EmailJS ──────────────
-        // BUG FIX: use currentUser directly — no separate "users" collection needed
         const userEmail = currentUser.email;
         if (userEmail) {
-          // Check last sent date from localStorage to avoid spamming
           const lastSentKey  = `aaina_lastEmail_${currentUser.uid}`;
           const lastSentStr  = localStorage.getItem(lastSentKey);
           const lastSentDate = lastSentStr ? new Date(lastSentStr) : null;
@@ -246,9 +235,9 @@ export default function WeeklyAaina({ currentUser }) {
               best_day:    reportResult.bestDay,
               worst_day:   reportResult.toughDay,
               best_moment: reportResult.bestMoment,
-              pattern:     reportResult.pattern,
-              oneTip:      reportResult.oneTip,
-              sathi_tip:   reportResult.sathiNote,
+              pattern:     reportResult.pattern,   // Email me bhi AI message jayega!
+              oneTip:      reportResult.oneTip,    // Email me bhi AI message jayega!
+              sathi_tip:   reportResult.sathiNote, // Email me bhi AI message jayega!
             };
 
             try {
@@ -269,6 +258,15 @@ export default function WeeklyAaina({ currentUser }) {
     };
 
     generateWeeklyAaina();
+
+    // Live update jab bhi tum diary save karo
+    const handleUpdate = () => {
+      console.log("Reloading Aaina data...");
+      generateWeeklyAaina();
+    };
+    window.addEventListener("diaryUpdated", handleUpdate);
+    return () => window.removeEventListener("diaryUpdated", handleUpdate);
+    
   }, [currentUser]);
 
   // ─────────────────────────────────────────
@@ -376,7 +374,6 @@ export default function WeeklyAaina({ currentUser }) {
           <div style={{ display: "flex", gap: "20px", margin: "30px 0", flexWrap: "wrap" }}>
             <div style={{ backgroundColor: "rgba(168,200,126,0.05)", padding: "30px", borderRadius: "16px", flex: "1", minWidth: "280px", border: "1px dashed rgba(168,200,126,0.3)" }}>
               <h4 style={{ margin: "0 0 15px 0", color: "#A8C87E", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "2px", fontSize: "14px" }}>💡 Actionable Tip</h4>
-              {/* BUG FIX: single set of quotes, no double-quoting */}
               <p style={{ margin: 0, fontSize: "20px", color: "#E8E4DC", fontStyle: "italic", lineHeight: "1.5" }}>"{weeklyData.oneTip}"</p>
             </div>
             <div style={{ backgroundColor: "#0A0A0F", padding: "30px", borderRadius: "16px", flex: "1", minWidth: "280px", border: "1px solid rgba(200,169,126,0.2)" }}>

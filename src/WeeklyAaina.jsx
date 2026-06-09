@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { collection, query, where, getDocs, Timestamp, doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebase";
 import emailjs from "@emailjs/browser";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Mail } from "lucide-react";
 
 export default function WeeklyAaina({ currentUser }) {
   const [weeklyData,      setWeeklyData]      = useState(null);
@@ -65,14 +65,17 @@ export default function WeeklyAaina({ currentUser }) {
   }, [currentUser]);
 
   // ─────────────────────────────────────────
-  // 2. WEEKLY AAINA (With Firestore Sync & Pagination)
+  // 2. WEEKLY AAINA (Bulletproof Filter & V3 Cache)
   // ─────────────────────────────────────────
   useEffect(() => {
     const generateWeeklyAaina = async () => {
       if (!currentUser) { setLoading(false); return; }
+      
       setLoading(true);
+      // 🔥 CRITICAL FIX: Turant purana data clear karo taaki UI pe pichla week na atke rahe
+      setWeeklyData(null); 
 
-      // Calculate Date Range based on weekOffset
+      // Calculate Strict Date Range
       const endDate = new Date();
       endDate.setHours(23, 59, 59, 999);
       endDate.setDate(endDate.getDate() - (weekOffset * 7)); 
@@ -85,26 +88,26 @@ export default function WeeklyAaina({ currentUser }) {
       const endStr = endDate.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
       setDateRangeText(`${startStr} - ${endStr}`);
 
-      // 🔥 CREATE UNIQUE FIRESTORE DOC ID FOR THIS WEEK 🔥
+      // 🔥 V3 IDENTIFIER: 100% Fresh Start 🔥
       const weekIdentifier = `${startDate.getFullYear()}_${startDate.getMonth() + 1}_${startDate.getDate()}`;
-      const weekDocId = `${currentUser.uid}_${weekIdentifier}`;
+      const weekDocId = `${currentUser.uid}_v3_${weekIdentifier}`;
       const weekDocRef = doc(db, "weekly_reflections", weekDocId);
 
       const todayString = new Date().toDateString();
-      const cacheKeyDate = `aaina_date_${currentUser.uid}_offset_${weekOffset}`;
-      const cacheKeyData = `aaina_data_${currentUser.uid}_offset_${weekOffset}`;
+      const cacheKeyDate = `aaina_date_v3_${currentUser.uid}_offset_${weekOffset}`;
+      const cacheKeyData = `aaina_data_v3_${currentUser.uid}_offset_${weekOffset}`;
 
       try {
-        // 1. CHECK FIRESTORE FOR PAST WEEKS FIRST
+        // 1. PAST WEEKS (offset > 0): Strict Firestore Check
         if (weekOffset > 0) {
           const docSnap = await getDoc(weekDocRef);
           if (docSnap.exists()) {
             setWeeklyData(docSnap.data().reportResult);
             setLoading(false);
-            return; // Data found in cloud, no need to recalculate!
+            return; 
           }
         } else {
-          // For Current Week (offset=0), check local cache to save Gemini API calls for today
+          // 2. CURRENT WEEK (offset === 0): Local Cache Check
           const cachedDate  = localStorage.getItem(cacheKeyDate);
           const cachedData  = localStorage.getItem(cacheKeyData);
           if (cachedDate === todayString && cachedData) {
@@ -114,16 +117,25 @@ export default function WeeklyAaina({ currentUser }) {
           }
         }
 
-        // 2. FETCH DIARIES IF NO CACHE OR NO FIRESTORE DOC
+        // 3. SAFE FIRESTORE FETCH (Without Composite Index Error)
         const q = query(
           collection(db, "diaries"),
-          where("userId",    "==", currentUser.uid),
-          where("createdAt", ">=", Timestamp.fromDate(startDate)),
-          where("createdAt", "<=", Timestamp.fromDate(endDate))
+          where("userId", "==", currentUser.uid)
         );
         const querySnapshot = await getDocs(q);
 
-        if (querySnapshot.empty) { 
+        // JavaScript Filter to bypass Firebase Error completely
+        const validDiaries = [];
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const docDate = data.createdAt?.toDate();
+          if (docDate && docDate >= startDate && docDate <= endDate) {
+            validDiaries.push(data);
+          }
+        });
+
+        // 🚨 STRICT CHECK: If user didn't write anything this specific week, EXIT!
+        if (validDiaries.length === 0) { 
           setWeeklyData(null); 
           setLoading(false); 
           return; 
@@ -151,8 +163,7 @@ export default function WeeklyAaina({ currentUser }) {
         let minScore        =  Infinity;
         let graphArray      = [];
 
-        querySnapshot.forEach((docSnap) => {
-          const diary       = docSnap.data();
+        validDiaries.forEach((diary) => {
           const currentEmoji = diary.moodEmoji || "😐";
           const mapped      = emojiDataMap[currentEmoji] || { score: 3, label: "mixed" };
           const score       = mapped.score;
@@ -181,11 +192,10 @@ export default function WeeklyAaina({ currentUser }) {
 
         graphArray.sort((a, b) => a.rawDate - b.rawDate);
 
-        const totalDays    = querySnapshot.size;
+        const totalDays    = validDiaries.length;
         const exactAverage = (totalMoodScore / totalDays).toFixed(1);
         const bestMomentText = bestDayObj ? bestDayObj.text : "No specific moments captured.";
 
-        // Default Fallbacks
         let patternText = "Your heart felt a bit of everything this week. A very human, very normal balance.";
         let oneTipText = "Take a deep breath and give yourself some grace. You are doing better than you think.";
         let sathiNoteText = "Life felt a little heavy this week, but I am always here for you, no matter what.";
@@ -203,11 +213,11 @@ export default function WeeklyAaina({ currentUser }) {
             body: JSON.stringify({
               systemInstruction: {
                 parts: [{ 
-                  text: `You are Sathi, a deeply warm, empathetic, and observant AI companion for Indian students. Analyze the user's diary entries for this week.
-                  Return a pure JSON object with EXACTLY 3 keys (do not wrap in markdown or backticks like \`\`\`json):
-                  1. 'moodPattern': Write a comprehensive 7-8 line comprehensive weekly review summarizing how their week or their journey went. Observe their emotional shifts, highlight real situations they faced, and give them heartfelt encouragement.
-                  2. 'actionableTip': Write 4-5 lines of highly specific, practical advice tailored directly to the real situations, stress, or thoughts they wrote about in their entries. 
-                  3. 'sathisNote': Write 4-5 lines of a sweet, warm closing note from you (Sathi). State what you specifically noticed about their spirit or growth.`
+                  text: `You are Sathi, an empathetic AI companion for Indian students. Analyze the user's weekly diary entries.
+                  Return a pure JSON object with EXACTLY 3 keys:
+                  1. 'moodPattern': Write a comprehensive 7-8 line weekly review. Highlight their emotional shifts and real situations. (This is their Email Review).
+                  2. 'actionableTip': Write 4-5 lines of highly specific advice tailored to their entries. 
+                  3. 'sathisNote': Write 4-5 lines of a warm closing note highlighting their spirit.`
                 }]
               },
               contents: [{ role: "user", parts: [{ text: `Here are my entries for this period: ${summaryText}. Provide my unique weekly insights.` }] }]
@@ -229,7 +239,7 @@ export default function WeeklyAaina({ currentUser }) {
             sathiNoteText = parsedData.sathisNote || sathiNoteText;
           }
         } catch (aiErr) {
-          console.error("🚨 AI Insights failed, using fallbacks:", aiErr);
+          console.error("🚨 AI Insights failed:", aiErr);
         }
 
         const reportResult = {
@@ -244,10 +254,11 @@ export default function WeeklyAaina({ currentUser }) {
           sathiNote:    sathiNoteText, 
         };
 
-        // SAVE TO LOCAL CACHE
-        localStorage.setItem(cacheKeyDate, todayString);
-        localStorage.setItem(cacheKeyData, JSON.stringify(reportResult));
-        setWeeklyData(reportResult);
+        // SAVE TO LOCAL CACHE (V3 KEYS)
+        if (weekOffset === 0) {
+          localStorage.setItem(cacheKeyDate, todayString);
+          localStorage.setItem(cacheKeyData, JSON.stringify(reportResult));
+        }
 
         // 🔥 SAVE SECURELY TO FIRESTORE 🔥
         try {
@@ -259,12 +270,11 @@ export default function WeeklyAaina({ currentUser }) {
             reportResult: reportResult,
             lastUpdated: serverTimestamp()
           }, { merge: true });
-          console.log(`✅ Week offset ${weekOffset} data securely saved to Firestore!`);
         } catch (fsErr) {
           console.error("🚨 Firestore save error:", fsErr);
         }
 
-        // 🔥 AUTOMATIC SUNDAY EMAIL FOR CURRENT WEEK 🔥
+        // 🔥 AUTOMATIC SUNDAY EMAIL FOR CURRENT WEEK ONLY 🔥
         const userEmail = currentUser.email;
         if (userEmail && weekOffset === 0) {
           const today = new Date();
@@ -298,7 +308,6 @@ export default function WeeklyAaina({ currentUser }) {
             try {
               await emailjs.send("service_0bjz9tp", "template_4fx97tr", templateParams, "OEW3zqMBAL7Qg1og0");
               localStorage.setItem(lastSentKey, today.toISOString());
-              console.log("Weekly Aaina report sent to email successfully!");
             } catch (emailErr) {
               console.error("EmailJS failed:", emailErr);
             }
@@ -307,6 +316,7 @@ export default function WeeklyAaina({ currentUser }) {
 
       } catch (err) {
         console.error("Error generating Weekly Aaina:", err);
+        setWeeklyData(null); // CRITICAL: Fallback clear on general error
       } finally {
         setLoading(false);
       }
@@ -314,21 +324,19 @@ export default function WeeklyAaina({ currentUser }) {
 
     generateWeeklyAaina();
 
-    // Jab diary save hogi, tab cache delete hoga taaki live update ho sake
     const handleUpdate = () => {
-      console.log("Reloading Aaina data...");
-      localStorage.removeItem(`aaina_date_${currentUser.uid}_offset_0`);
-      localStorage.removeItem(`aaina_data_${currentUser.uid}_offset_0`);
-      generateWeeklyAaina();
+      // Clear ONLY V3 Current Week Cache when diary is updated
+      localStorage.removeItem(`aaina_date_v3_${currentUser.uid}_offset_0`);
+      localStorage.removeItem(`aaina_data_v3_${currentUser.uid}_offset_0`);
+      if (weekOffset === 0) {
+        generateWeeklyAaina();
+      }
     };
     window.addEventListener("diaryUpdated", handleUpdate);
     return () => window.removeEventListener("diaryUpdated", handleUpdate);
     
   }, [currentUser, weekOffset]);
 
-  // ─────────────────────────────────────────
-  // RENDER
-  // ─────────────────────────────────────────
   if (loading) return (
     <div style={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", backgroundColor: "#06060A", color: "#A8C87E", fontFamily: "'DM Mono', monospace", letterSpacing: "2px" }}>
       ANALYZING {weekOffset > 0 ? "PAST" : "THIS"} WEEK...
@@ -338,7 +346,6 @@ export default function WeeklyAaina({ currentUser }) {
   return (
     <div style={{ backgroundColor: "#06060A", color: "#E8E4DC", padding: "120px 20px 80px", fontFamily: "'Cormorant Garamond', serif", minHeight: "100vh" }}>
 
-      {/* ── Daily Evening Modal ───────────────── */}
       {showDailyModal && (
         <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.8)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 9999, backdropFilter: "blur(5px)" }}>
           <div style={{ backgroundColor: "#0A0A0F", padding: "40px", borderRadius: "16px", maxWidth: "500px", width: "90%", border: "1px solid #A8C87E", textAlign: "center", boxShadow: "0 0 30px rgba(168,200,126,0.15)" }}>
@@ -360,7 +367,6 @@ export default function WeeklyAaina({ currentUser }) {
         </div>
       )}
 
-      {/* ── Main Dashboard ────────────────────── */}
       <div style={{ maxWidth: "900px", margin: "0 auto", animation: "fadeIn 0.8s ease-out" }}>
 
         {/* Date Navigation Header */}
@@ -389,7 +395,7 @@ export default function WeeklyAaina({ currentUser }) {
         {!weeklyData ? (
           <div style={{ textAlign: "center", color: "#A09A95", marginTop: "100px", fontSize: "22px" }}>
             <div style={{ fontSize: "40px", marginBottom: "20px" }}>📓</div>
-            No entries found for this period. Your Darpan journey starts here!
+            {weekOffset > 0 ? "No entries found for this period." : "No entries found yet. Your Darpan journey is waiting!"}
           </div>
         ) : (
           <>
@@ -414,6 +420,18 @@ export default function WeeklyAaina({ currentUser }) {
                 </div>
               ))}
             </div>
+
+            {/* Email Summary Extra Card (Only visible for Past Weeks) */}
+            {weekOffset > 0 && (
+              <div style={{ backgroundColor: "rgba(200,169,126,0.05)", padding: "30px", borderRadius: "16px", marginBottom: "30px", border: "1px dashed rgba(200,169,126,0.4)" }}>
+                <h3 style={{ margin: "0 0 15px 0", color: "#C8A97E", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "2px", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Mail size={16} /> Past Week's Full Review (Sent to Email)
+                </h3>
+                <p style={{ margin: 0, color: "#E8E4DC", fontSize: "20px", lineHeight: "1.6", whiteSpace: "pre-line", fontStyle: "italic" }}>
+                  "{weeklyData.pattern}"
+                </p>
+              </div>
+            )}
 
             {/* Mood Graph */}
             <div style={{ backgroundColor: "#0A0A0F", padding: "30px", borderRadius: "16px", marginBottom: "30px", border: "1px solid rgba(168,200,126,0.2)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
@@ -443,11 +461,13 @@ export default function WeeklyAaina({ currentUser }) {
               </div>
             </div>
 
-            {/* Mood Pattern */}
-            <div style={{ backgroundColor: "#0A0A0F", padding: "30px", borderRadius: "16px", marginBottom: "30px", border: "1px solid rgba(255,255,255,0.05)" }}>
-              <h3 style={{ margin: "0 0 15px 0", color: "#C8A97E", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "2px", fontSize: "14px" }}>🧩 Your Mood Pattern</h3>
-              <p style={{ margin: 0, color: "#E8E4DC", fontSize: "20px", lineHeight: "1.6", whiteSpace: "pre-line" }}>{weeklyData.pattern}</p>
-            </div>
+            {/* Mood Pattern (Visible in Current Week) */}
+            {weekOffset === 0 && (
+              <div style={{ backgroundColor: "#0A0A0F", padding: "30px", borderRadius: "16px", marginBottom: "30px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <h3 style={{ margin: "0 0 15px 0", color: "#C8A97E", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "2px", fontSize: "14px" }}>🧩 Your Mood Pattern</h3>
+                <p style={{ margin: 0, color: "#E8E4DC", fontSize: "20px", lineHeight: "1.6", whiteSpace: "pre-line" }}>{weeklyData.pattern}</p>
+              </div>
+            )}
 
             {/* Tip + Sathi Note */}
             <div style={{ display: "flex", gap: "20px", margin: "30px 0", flexWrap: "wrap" }}>

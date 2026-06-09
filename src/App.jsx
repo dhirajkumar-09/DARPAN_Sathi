@@ -8,7 +8,9 @@ import {
 import emailjs from '@emailjs/browser';
 import WeeklyAaina from './WeeklyAaina';
 // --- FIREBASE IMPORTS ---
-import { auth, googleProvider, db ,messaging} from './firebase';
+import { auth, googleProvider, db ,messaging,storage} from './firebase';
+import { updateProfile } from "firebase/auth";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { signInWithPopup, onAuthStateChanged, signOut, signInAnonymously, signInWithCustomToken } from 'firebase/auth';
 import { 
   collection, addDoc, getDocs, query, where, orderBy, serverTimestamp , deleteDoc, doc , updateDoc ,arrayUnion, arrayRemove, onSnapshot, limit, setDoc
@@ -1433,9 +1435,7 @@ const DiaryPage = ({ diaryEntries, setDiaryEntries }) => {
     </div>
   );
 };
-
 const ProfilePage = ({ profile, setProfile }) => {
-  const fileInputRef = useRef(null);
   const [nameInput, setNameInput] = useState(profile.name);
   const [collegeInput, setCollegeInput] = useState(profile.college);
   const [branchInput, setBranchInput] = useState(profile.branch);
@@ -1445,15 +1445,6 @@ const ProfilePage = ({ profile, setProfile }) => {
   const [isAdminPublishing, setIsAdminPublishing] = useState(false);
 
   const isWebsiteOwner = profile.email === "dhidna9090@gmail.com"; 
-
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setProfile(prev => ({ ...prev, photoURL: reader.result }));
-      reader.readAsDataURL(file);
-    }
-  };
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -1501,24 +1492,16 @@ const ProfilePage = ({ profile, setProfile }) => {
           <div className="bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-2xl p-6 md:p-10 shadow-2xl relative">
             <form onSubmit={handleSave} className="space-y-8">
               <div className="flex flex-col items-center justify-center space-y-4">
-                <div className="relative group cursor-pointer" onClick={() => fileInputRef.current.click()}>
-                  <div className="w-32 h-32 rounded-full border-2 border-[#C8A97E]/40 overflow-hidden shadow-xl bg-[#141419] transition-all duration-300 group-hover:border-[#C8A97E] flex items-center justify-center">
-                    {profile.photoURL ? (
-                      <img src={profile.photoURL} alt="Avatar" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                    ) : (
-                      <User className="w-12 h-12 text-[#5A5550]" />
-                    )}
-                  </div>
-                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <Camera className="w-6 h-6 text-[#C8A97E]" />
-                  </div>
-                  <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
+                
+                {/* 📸 STATIC PHOTO UI (Ab koi upload button nahi hai) 📸 */}
+                <div className="w-32 h-32 rounded-full border-2 border-[#C8A97E]/40 overflow-hidden shadow-xl bg-[#141419] flex items-center justify-center">
+                  {profile.photoURL ? (
+                    <img src={profile.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-12 h-12 text-[#5A5550]" />
+                  )}
                 </div>
-                <div className="text-center">
-                  <button type="button" onClick={() => fileInputRef.current.click()} className="font-mono text-[10px] tracking-widest text-[#C8A97E] uppercase hover:text-white transition-colors cursor-pointer">
-                    Change Photo
-                  </button>
-                </div>
+
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
@@ -1633,7 +1616,6 @@ export default function App() {
       parts: [{ text: "Namaste! I am Sathi. I am here to listen, whether you want to talk about exams, stress, or just your day. You can type or use the microphone to speak to me in English, Hindi, or Hinglish. How are you feeling right now?" }]
     }
   ]);
-
   // 📍 NAYA NOTIFICATION FUNCTION YAHAN AAYEGA 📍
   const requestNotificationPermission = async (user) => {
     try {

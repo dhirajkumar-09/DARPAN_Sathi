@@ -13,7 +13,7 @@ import { updateProfile } from "firebase/auth";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { signInWithPopup, onAuthStateChanged, signOut, signInAnonymously, signInWithCustomToken } from 'firebase/auth';
 import { 
-  collection, addDoc, getDocs, query, where, orderBy, serverTimestamp , deleteDoc, doc , updateDoc ,arrayUnion, arrayRemove, onSnapshot, limit, setDoc
+  collection, addDoc, getDocs, query, where, orderBy, serverTimestamp , deleteDoc, doc , updateDoc ,arrayUnion, arrayRemove, onSnapshot, limit, setDoc ,getDoc
 } from 'firebase/firestore';
 import { getToken } from 'firebase/messaging';
 // --- API CONSTANTS ---
@@ -951,7 +951,10 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
               <textarea
                 value={newStory}
                 onChange={(e) => setNewStory(e.target.value)}
-                placeholder="Write your story here..."
+                placeholder="A safe space to share your thoughts,lessons, and little victories.
+Write freely.....!
+
+Someone might find hope in your story....✨"
                 className="w-full bg-[#141419] border border-white/10 rounded-2xl p-5 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-lg md:text-xl focus:outline-none focus:border-[#C8A97E]/50 transition-colors resize-none shadow-inner min-h-[140px] custom-scrollbar"
               />
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2 border-t border-white/5">
@@ -1414,26 +1417,79 @@ const handleSave = async () => {
   );
 };
 const ProfilePage = ({ profile, setProfile }) => {
-  const [nameInput, setNameInput] = useState(profile.name);
-  const [collegeInput, setCollegeInput] = useState(profile.college);
-  const [branchInput, setBranchInput] = useState(profile.branch);
+  const [nameInput, setNameInput] = useState(profile.name || "");
+  const [collegeInput, setCollegeInput] = useState(profile.college || "");
+  const [branchInput, setBranchInput] = useState(profile.branch || "");
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false); // Added saving state
   
   const [adminNotice, setAdminNotice] = useState("");
   const [isAdminPublishing, setIsAdminPublishing] = useState(false);
 
   const isWebsiteOwner = profile.email === "dhidna9090@gmail.com"; 
 
-  const handleSave = (e) => {
+  // 🔥 NEW: Fetch saved data from Firestore when page loads
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      if (auth.currentUser) {
+        try {
+          const userDocRef = doc(db, "users", auth.currentUser.uid);
+          const docSnap = await getDoc(userDocRef);
+
+          if (docSnap.exists()) {
+            const userData = docSnap.data();
+            if (userData.name) setNameInput(userData.name);
+            if (userData.college) setCollegeInput(userData.college);
+            if (userData.branch) setBranchInput(userData.branch);
+
+            // Keep global profile state in sync
+            setProfile(prev => ({
+              ...prev,
+              name: userData.name || prev.name,
+              college: userData.college || prev.college,
+              branch: userData.branch || prev.branch
+            }));
+          }
+        } catch (error) {
+          console.error("Error fetching profile:", error);
+        }
+      }
+    };
+    fetchProfileData();
+  }, [setProfile]);
+
+  // 🔥 NEW: Actually save the data to Firestore so it survives refresh
+  const handleSave = async (e) => {
     e.preventDefault();
-    setProfile(prev => ({
-      ...prev,
-      name: nameInput,
-      college: collegeInput,
-      branch: branchInput
-    }));
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+    if (!auth.currentUser) return;
+    
+    setIsSaving(true);
+    try {
+      const userDocRef = doc(db, "users", auth.currentUser.uid);
+      
+      // Save to database
+      await setDoc(userDocRef, {
+        name: nameInput,
+        college: collegeInput,
+        branch: branchInput,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      // Update local state
+      setProfile(prev => ({
+        ...prev,
+        name: nameInput,
+        college: collegeInput,
+        branch: branchInput
+      }));
+
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    } catch (error) {
+      console.error("Error saving profile:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleBroadcastNotice = async (e) => {
@@ -1470,8 +1526,6 @@ const ProfilePage = ({ profile, setProfile }) => {
           <div className="bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-2xl p-6 md:p-10 shadow-2xl relative">
             <form onSubmit={handleSave} className="space-y-8">
               <div className="flex flex-col items-center justify-center space-y-4">
-                
-                {/* 📸 STATIC PHOTO UI (Ab koi upload button nahi hai) 📸 */}
                 <div className="w-32 h-32 rounded-full border-2 border-[#C8A97E]/40 overflow-hidden shadow-xl bg-[#141419] flex items-center justify-center">
                   {profile.photoURL ? (
                     <img src={profile.photoURL} alt="Avatar" className="w-full h-full object-cover" />
@@ -1479,7 +1533,6 @@ const ProfilePage = ({ profile, setProfile }) => {
                     <User className="w-12 h-12 text-[#5A5550]" />
                   )}
                 </div>
-
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
@@ -1517,8 +1570,8 @@ const ProfilePage = ({ profile, setProfile }) => {
                 <div className="font-mono text-[10px] text-[#5A5550] uppercase tracking-widest">
                   {isSaved && <span className="text-[#A8C87E] flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Profile changes saved successfully!</span>}
                 </div>
-                <button type="submit" className="w-full sm:w-auto px-8 py-3.5 bg-[#C8A97E] text-black font-mono text-xs tracking-widest uppercase font-bold hover:bg-white transition-colors rounded-lg shadow-[0_0_25px_rgba(200,169,126,0.15)] cursor-pointer">
-                  Save Profile
+                <button type="submit" disabled={isSaving} className="w-full sm:w-auto px-8 py-3.5 bg-[#C8A97E] text-black font-mono text-xs tracking-widest uppercase font-bold hover:bg-white transition-colors rounded-lg shadow-[0_0_25px_rgba(200,169,126,0.15)] cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed">
+                  {isSaving ? "Saving..." : "Save Profile"}
                 </button>
               </div>
             </form>

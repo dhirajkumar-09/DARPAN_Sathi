@@ -18,8 +18,7 @@ import {
 import { getToken } from 'firebase/messaging';
 // --- API CONSTANTS ---
 // ⚠️ DHYAN DEIN: Is API key ko production mein process.env.REACT_APP_GEMINI_API_KEY se replace karna best practice hai
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AQ.Ab8RN6KhBj-VF_hUVR3ws2RiMh5LseHrhaeQ4UCg5e_dJ9Eg2A";
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+// const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 const SATHI_SYSTEM_INSTRUCTION = {
   parts: [{ text: "You are Sathi, a warm, empathetic AI companion for Indian students. You MUST respond primarily in conversational English and Hinglish (e.g., 'Main theek hoon, tell me about your day'). STRICTLY AVOID writing in pure Devanagari Hindi script (like 'नमस्ते') unless the user explicitly types in Devanagari first. Keep responses concise (2-4 sentences) and highly supportive." }]
 };
@@ -398,23 +397,12 @@ const handleVoiceInput = () => {
     
     try {
       setIsSpeaking(true);
-      const ttsUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${GEMINI_API_KEY}`;
-      
-      const payload = {
-        contents: [{ parts: [{ text: text }] }],
-        generationConfig: {
-          responseModalities: ["AUDIO"],
-          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } } }
-        },
-        model: "gemini-2.5-flash-preview-tts"
-      };
-
-      const response = await fetch(ttsUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
+      // 🔥 Naya Backend Call (Voice TTS ke liye) 🔥
+const response = await fetch("https://dapan-api-secure.onrender.com/api/voice", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ text: text })
+});
       const data = await response.json();
       const inlineData = data.candidates?.[0]?.content?.parts?.[0]?.inlineData;
       
@@ -472,16 +460,24 @@ const handleVoiceInput = () => {
 
     try {
       let apiMessages = [...newMessages];
+      
+      // 🔥 SMART TOKEN OPTIMIZATION: Sirf last 6 messages API ko bhejo
+      if (apiMessages.length > 6) {
+        apiMessages = apiMessages.slice(-6); 
+      }
+
+      // Gemini REST API strict hai, list ka pehla message 'user' hona chahiye
       if (apiMessages.length > 0 && apiMessages[0].role === "model") {
         apiMessages = apiMessages.slice(1);
       }
 
-      const response = await fetch(GEMINI_URL, {
+     const response = await fetch("https://dapan-api-secure.onrender.com/api/chat", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ systemInstruction: SATHI_SYSTEM_INSTRUCTION, contents: apiMessages }),
+        body: JSON.stringify({ messages: apiMessages }) // Sirf messages backend ko bheje
       });
-
+      // const data = await response.json();
+      // ... baki ka code same rahega ...
       const data = await response.json();
 
       if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
@@ -1250,81 +1246,63 @@ const DiaryPage = ({ diaryEntries, setDiaryEntries }) => {
       }
     }
   };
-
-  const handleSave = async () => {
-    if (!newEntry.trim() || !auth.currentUser) return;
+const handleSave = async () => {
+    if (!newEntry.trim() || !currentUser) return;
     setIsSaving(true);
     
     let moodEmoji = "📝"; // Default fallback emoji
     
-    // 🔥 STEP 1: Pehle Gemini AI se mood emoji nikalwao
+    // ─────────────────────────────────────────
+    // 🔥 STEP 1: BACKEND SE EMOJI MANGAO 🔥
+    // ─────────────────────────────────────────
     try {
-      console.log("🚀 Sending text to Gemini 2.5 Flash: ", newEntry);
-      const response = await fetch(GEMINI_URL, {
+      const response = await fetch("https://dapan-api-secure.onrender.com/api/generate-emoji", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: "You analyze diary entries and return exactly ONE emoji that best represents the mood. Return ONLY the emoji character." }]
-          },
-          contents: [
-            { role: "user", parts: [{ text: `Diary entry: "${newEntry}"` }] }
-          ]
-        })
+        body: JSON.stringify({ diaryEntry: newEntry }) // Sirf user ka text backend ko bheja
       });
 
       const data = await response.json();
-      
-      if (data.error) {
-        console.error("🚨 GOOGLE API ERROR:", data.error.message);
-      } else if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-        const raw = data.candidates[0].content.parts[0].text.trim();
-        const emojiMatch = raw.match(/[\p{Emoji}\u200d]+/gu); 
-        if (emojiMatch) {
-          moodEmoji = emojiMatch[0]; 
-          console.log("✅ Emoji found successfully:", moodEmoji);
-        }
+      if (data.emoji) {
+        moodEmoji = data.emoji;
+        console.log("✅ Emoji found successfully from backend:", moodEmoji);
       }
     } catch (apiError) {
-      console.error("🚨 GEMINI FETCH ERROR:", apiError);
+      console.error("🚨 BACKEND FETCH ERROR:", apiError);
     }
 
-    // 🔥 STEP 2: Ab us dynamic emoji ko Firebase me save karo
+    // ─────────────────────────────────────────
+    // 🔥 STEP 2: FIRESTORE MEIN SAVE KARO 🔥
+    // ─────────────────────────────────────────
     try {
       const now = new Date();
       const timeString = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+      const todayFormatted = now.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
       
       const entryData = {
         content: newEntry,
         date: todayFormatted,
         time: timeString,
-        userId: auth.currentUser.uid,
-        moodEmoji: moodEmoji, // 🔥 Yahan ab hardcoded 📝 nahi, Gemini ka emoji aayega
-        feedback: "Quick Feedback!",
+        userId: currentUser.uid,
+        moodEmoji: moodEmoji, 
+        feedback: "Quick Feedback!", // Naya button name!
         createdAt: serverTimestamp()
       };
   
-      const docRef = await addDoc(collection(db, "diaries"), entryData);
+      await addDoc(collection(db, "diaries"), entryData);
       
-      setDiaryEntries([{ id: docRef.id, ...entryData }, ...diaryEntries]);
-      setNewEntry(""); 
-      
-      // Cache clear for Mood Canvas
-      if (auth.currentUser) {
-          localStorage.removeItem(`aaina_date_${auth.currentUser.uid}`);
-          localStorage.removeItem(`aaina_data_${auth.currentUser.uid}`);
-      }
-      
-      // 🔥 Live Update trigger (Taaki Diary save hote hi Mood Canvas update ho jaye)
+      // Weekly Aaina ko update karne ke liye event trigger kiya
       window.dispatchEvent(new Event("diaryUpdated"));
       
+      setNewEntry(""); // Textarea clear kar diya
+      // Yahan tumhara koi success toast ya popup logic ho toh add kar sakte ho
+      
     } catch (dbError) {
-      console.error("Error saving diary entry:", dbError);
+      console.error("🚨 FIRESTORE SAVE ERROR:", dbError);
     } finally {
       setIsSaving(false);
     }
   };
-
   const filteredEntries = selectedDate 
     ? diaryEntries.filter(e => e.date === selectedDate)
     : diaryEntries;

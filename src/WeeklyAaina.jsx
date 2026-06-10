@@ -202,28 +202,14 @@ export default function WeeklyAaina({ currentUser }) {
 
         // 🔥 GEMINI AI GENERATION 🔥
         try {
-          const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-          const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-          
           const summaryText = graphArray.map(d => `${d.day} (${d.emoji}): ${d.text}`).join(" | ");
 
-          const aiResponse = await fetch(GEMINI_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              systemInstruction: {
-                parts: [{ 
-                  text: `You are Sathi, an empathetic AI companion for Indian students. Analyze the user's weekly diary entries.
-                  Return a pure JSON object with EXACTLY 3 keys:
-                  1. 'moodPattern': Write a comprehensive 7-8 line weekly review. Highlight their emotional shifts and real situations. (This is their Email Review).
-                  2. 'actionableTip': Write 4-5 lines of highly specific advice tailored to their entries. 
-                  3. 'sathisNote': Write 4-5 lines of a warm closing note highlighting their spirit.`
-                }]
-              },
-              contents: [{ role: "user", parts: [{ text: `Here are my entries for this period: ${summaryText}. Provide my unique weekly insights.` }] }]
-            })
-          });
-
+// 🔥 Naya Backend Call 🔥
+const aiResponse = await fetch("https://dapan-api-secure.onrender.com/api/generate-insights", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ summaryText: summaryText })
+});
           const aiData = await aiResponse.json();
           
           if (aiData.candidates && aiData.candidates[0]?.content?.parts[0]?.text) {

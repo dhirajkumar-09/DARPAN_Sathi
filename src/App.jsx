@@ -1250,7 +1250,7 @@ const DiaryPage = ({ diaryEntries, setDiaryEntries }) => {
     }
   };
 const handleSave = async () => {
-    if (!newEntry.trim() || !currentUser) return;
+    if (!newEntry.trim() || !auth.currentUser) return;
     setIsSaving(true);
     
     let moodEmoji = "📝"; // Default fallback emoji
@@ -1260,15 +1260,21 @@ const handleSave = async () => {
     // ─────────────────────────────────────────
     try {
       const response = await fetch("https://dapan-api-secure.onrender.com/api/generate-emoji", {
-        method: "POST",
+  method: "POST",
+  // ... baaki code same rahega
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ diaryEntry: newEntry }) // Sirf user ka text backend ko bheja
+        body: JSON.stringify({ diaryEntry: newEntry }) 
       });
 
-      const data = await response.json();
-      if (data.emoji) {
-        moodEmoji = data.emoji;
-        console.log("✅ Emoji found successfully from backend:", moodEmoji);
+      // Check if response is successful before parsing
+      if (response.ok) {
+        const data = await response.json();
+        if (data.emoji) {
+          moodEmoji = data.emoji;
+          console.log("✅ Emoji found successfully from backend:", moodEmoji);
+        }
+      } else {
+        console.warn("⚠️ Backend returned status:", response.status);
       }
     } catch (apiError) {
       console.error("🚨 BACKEND FETCH ERROR:", apiError);
@@ -1280,15 +1286,19 @@ const handleSave = async () => {
     try {
       const now = new Date();
       const timeString = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-      const todayFormatted = now.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+      
+      // 🔴 DATE FIX: Wapas purana lamba format laga diya taaki UI aur Calendar theek se kaam karein
+      const todayFormatted = now.toLocaleDateString('en-IN', { 
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+      });
       
       const entryData = {
         content: newEntry,
         date: todayFormatted,
         time: timeString,
-        userId: currentUser.uid,
+        userId: auth.currentUser.uid, 
         moodEmoji: moodEmoji, 
-        feedback: "Quick Feedback!", // Naya button name!
+        feedback: "Quick Feedback!", 
         createdAt: serverTimestamp()
       };
   
@@ -1298,7 +1308,6 @@ const handleSave = async () => {
       window.dispatchEvent(new Event("diaryUpdated"));
       
       setNewEntry(""); // Textarea clear kar diya
-      // Yahan tumhara koi success toast ya popup logic ho toh add kar sakte ho
       
     } catch (dbError) {
       console.error("🚨 FIRESTORE SAVE ERROR:", dbError);

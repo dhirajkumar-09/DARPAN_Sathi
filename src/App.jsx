@@ -836,11 +836,17 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
   const [newStory, setNewStory] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPrivatePost, setIsPrivatePost] = useState(false);
+  const [allowCommentsPost, setAllowCommentsPost] = useState(true); 
   
   const [openLikePopupId, setOpenLikePopupId] = useState(null);
+  const [openCommentPopupId, setOpenCommentPopupId] = useState(null); 
+  const [commentText, setCommentText] = useState(""); 
+  const [replyingTo, setReplyingTo] = useState(null); // 🔴 NEW: Track who we are replying to { commentId, name }
 
   useEffect(() => {
-    const handleClickOutside = () => setOpenLikePopupId(null);
+    const handleClickOutside = () => {
+      setOpenLikePopupId(null);
+    };
     window.addEventListener("click", handleClickOutside);
     return () => window.removeEventListener("click", handleClickOutside);
   }, []);
@@ -865,8 +871,10 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
         userId: auth.currentUser.uid,
         isPrivate: isPrivatePost,
         showLikesPublicly: false,
+        allowComments: allowCommentsPost, 
         displayTime: `${dateString}, ${timeString}`,
         likes: [],
+        comments: [], 
         createdAt: serverTimestamp()
       };
       
@@ -874,6 +882,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
       setUserStories([{ id: docRef.id, ...storyData }, ...userStories]);
       setNewStory("");
       setIsPrivatePost(false);
+      setAllowCommentsPost(true);
     } catch (error) { 
       console.error("Error saving story:", error); 
     } finally { 
@@ -893,6 +902,13 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
       await updateDoc(doc(db, "stories", storyId), { showLikesPublicly: !currentStatus });
       setUserStories(userStories.map(s => s.id === storyId ? { ...s, showLikesPublicly: !currentStatus } : s));
     } catch (error) { console.error("Error updating likes visibility:", error); }
+  };
+
+  const toggleCommentsStatus = async (storyId, currentStatus) => {
+    try {
+      await updateDoc(doc(db, "stories", storyId), { allowComments: !currentStatus });
+      setUserStories(userStories.map(s => s.id === storyId ? { ...s, allowComments: !currentStatus } : s));
+    } catch (error) { console.error("Error updating comments status:", error); }
   };
 
   const deleteStory = async (storyId) => {
@@ -928,6 +944,106 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     }
   };
 
+  // Function to add a main comment
+  const handleAddComment = async (story) => {
+    if (!auth.currentUser || !commentText.trim()) return;
+
+    const newComment = {
+      id: Date.now().toString(), 
+      uid: auth.currentUser.uid,
+      name: profile?.name || "Student",
+      photoURL: profile?.photoURL || null,
+      text: commentText.trim(),
+      likes: [], 
+      replies: [], // 🔴 NEW: Empty array for nested replies
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      const storyRef = doc(db, "stories", story.id);
+      await updateDoc(storyRef, {
+        comments: arrayUnion(newComment)
+      });
+      
+      setUserStories(userStories.map(s => 
+        s.id === story.id 
+          ? { ...s, comments: [...(s.comments || []), newComment] } 
+          : s
+      ));
+      
+      setCommentText(""); 
+    } catch (error) {
+      console.error("Error adding comment:", error);
+    }
+  };
+
+  // 🔴 NEW: Function to add a reply to a comment
+  const handleAddReply = async (story, parentCommentId) => {
+    if (!auth.currentUser || !commentText.trim()) return;
+
+    const newReply = {
+      id: Date.now().toString(),
+      uid: auth.currentUser.uid,
+      name: profile?.name || "Student",
+      photoURL: profile?.photoURL || null,
+      text: commentText.trim(),
+      createdAt: new Date().toISOString()
+    };
+
+    // Map through existing comments to inject the reply inside the parent comment
+    const updatedComments = (story.comments || []).map(comment => {
+      if (comment.id === parentCommentId) {
+        return {
+          ...comment,
+          replies: [...(comment.replies || []), newReply]
+        };
+      }
+      return comment;
+    });
+
+    setUserStories(userStories.map(s => 
+      s.id === story.id ? { ...s, comments: updatedComments } : s
+    ));
+
+    try {
+      await updateDoc(doc(db, "stories", story.id), { comments: updatedComments });
+      setCommentText("");
+      setReplyingTo(null); // Reset reply state
+    } catch (error) {
+      console.error("Error adding reply:", error);
+    }
+  };
+
+  const toggleCommentLike = async (story, commentId) => {
+    if (!auth.currentUser) return;
+    const uid = auth.currentUser.uid;
+
+    const updatedComments = (story.comments || []).map(comment => {
+      if (comment.id === commentId) {
+        const currentLikes = comment.likes || [];
+        const hasLiked = currentLikes.includes(uid);
+        const newLikes = hasLiked 
+          ? currentLikes.filter(id => id !== uid) 
+          : [...currentLikes, uid]; 
+        
+        return { ...comment, likes: newLikes };
+      }
+      return comment;
+    });
+
+    setUserStories(userStories.map(s => 
+      s.id === story.id ? { ...s, comments: updatedComments } : s
+    ));
+
+    try {
+      await updateDoc(doc(db, "stories", story.id), { 
+        comments: updatedComments 
+      });
+    } catch (error) {
+      console.error("Error toggling comment like:", error);
+    }
+  };
+
   const visibleStories = userStories.filter(t => !t.isPrivate || t.userId === auth.currentUser?.uid);
 
   return (
@@ -949,15 +1065,18 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
             </p>
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
               <textarea
+                rows={6}
                 value={newStory}
                 onChange={(e) => setNewStory(e.target.value)}
-                placeholder="A safe space to share your thoughts,lessons, and little victories.
-Write freely.....!
+                placeholder={`A safe space to share your thoughts , lessons and little victories.
+Write freely.....!!
+                            
 
-Someone might find hope in your story....✨"
-                className="w-full bg-[#141419] border border-white/10 rounded-2xl p-5 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-lg md:text-xl focus:outline-none focus:border-[#C8A97E]/50 transition-colors resize-none shadow-inner min-h-[140px] custom-scrollbar"
+                                Someone might find hope in your story...✨`}
+                className="w-full bg-[#141419] border border-white/10 rounded-2xl p-5 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-lg md:text-xl focus:outline-none focus:border-[#C8A97E]/50 transition-colors resize-y shadow-inner min-h-[200px]"
               />
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2 border-t border-white/5">
+              
+              <div className="flex flex-wrap items-center gap-3">
                 <button 
                   type="button" 
                   onClick={() => setIsPrivatePost(!isPrivatePost)}
@@ -967,6 +1086,21 @@ Someone might find hope in your story....✨"
                 >
                   {isPrivatePost ? <><Lock className="w-4 h-4" /> Keep Private Note</> : <><Globe className="w-4 h-4" /> Share Publicly</>}
                 </button>
+
+                {!isPrivatePost && (
+                  <button 
+                    type="button" 
+                    onClick={() => setAllowCommentsPost(!allowCommentsPost)}
+                    className={`font-mono text-[10px] tracking-widest uppercase flex items-center gap-2 px-5 py-3 rounded-xl transition-all border cursor-pointer shadow-sm ${
+                      !allowCommentsPost ? "bg-red-500/10 border-red-500/30 text-red-400" : "bg-[#C8A97E]/10 border-[#C8A97E]/30 text-[#C8A97E] hover:bg-[#C8A97E]/20"
+                    }`}
+                  >
+                    <MessageCircle className="w-4 h-4" /> {allowCommentsPost ? "Comments: ON" : "Comments: OFF"}
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-end items-center gap-4 pt-2 border-t border-white/5">
                 <button 
                   type="submit"
                   disabled={isSubmitting || !newStory.trim()}
@@ -990,11 +1124,11 @@ Someone might find hope in your story....✨"
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
               {visibleStories.map((t, i) => {
                 const isMyPost = t.userId === auth.currentUser?.uid;
-                
-                // 🔥 MAGIC SYNC: User ki apni story par LIVE state dikhega 🔥
                 const displayPhoto = isMyPost ? profile?.photoURL : t.photoURL;
                 const displayName = isMyPost ? (profile?.name || "Student") : t.name;
                 const displayInitial = isMyPost ? (profile?.name ? profile.name.charAt(0).toUpperCase() : "S") : (t.initial || 'S');
+                
+                const allowsComments = t.allowComments !== false; 
 
                 const quoteLength = t.quote.length;
                 let textSizeClass = "text-3xl md:text-4xl lg:text-5xl leading-[1.2]"; 
@@ -1036,6 +1170,13 @@ Someone might find hope in your story....✨"
                                 {t.showLikesPublicly ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                               </button>
                             )}
+                            
+                            {!t.isPrivate && (
+                                <button onClick={() => toggleCommentsStatus(t.id, allowsComments)} className={`p-3 rounded-full border transition-all cursor-pointer ${!allowsComments ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-[#141419] border-white/10 text-[#8A8580] hover:text-[#C8A97E] hover:border-[#C8A97E]/50'}`} title={allowsComments ? "Turn Comments Off" : "Turn Comments On"}>
+                                  <MessageCircle className="w-4 h-4" />
+                                </button>
+                            )}
+
                             <button onClick={() => togglePrivacy(t.id, t.isPrivate)} className="p-3 rounded-full bg-[#141419] border border-white/10 text-[#8A8580] hover:text-[#C8A97E] hover:border-[#C8A97E]/50 transition-all cursor-pointer" title={t.isPrivate ? "Make Public" : "Make Private"}>
                               {t.isPrivate ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
                             </button>
@@ -1058,9 +1199,28 @@ Someone might find hope in your story....✨"
                       </div>
                       
                       {!t.isPrivate && (
-                        <div className="relative flex items-center">
+                        <div className="relative flex items-center gap-2">
+                          
+                          {/* COMMENT BUTTON */}
                           <div className="flex items-center gap-1 bg-white/5 border border-white/10 hover:border-[#C8A97E]/50 hover:bg-[#C8A97E]/10 rounded-full px-3 py-1.5 transition-all">
-                            
+                            <button
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setOpenLikePopupId(null);
+                                setOpenCommentPopupId(openCommentPopupId === t.id ? null : t.id); 
+                                setReplyingTo(null); // Clear reply state when reopen
+                              }}
+                              className="cursor-pointer group outline-none flex items-center justify-center"
+                            >
+                              <MessageSquare className={`w-4 h-4 transition-transform group-hover:scale-110 text-[#8A8580] group-hover:text-[#C8A97E]`} />
+                            </button>
+                            <span className="font-mono text-[10px] font-bold ml-1 text-[#8A8580] cursor-pointer" onClick={() => setOpenCommentPopupId(openCommentPopupId === t.id ? null : t.id)}>
+                              {t.comments?.length || 0}
+                            </span>
+                          </div>
+
+                          {/* LIKES BUTTON */}
+                          <div className="flex items-center gap-1 bg-white/5 border border-white/10 hover:border-[#C8A97E]/50 hover:bg-[#C8A97E]/10 rounded-full px-3 py-1.5 transition-all">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleLike(t); }}
                               className="cursor-pointer group outline-none flex items-center justify-center"
@@ -1075,6 +1235,7 @@ Someone might find hope in your story....✨"
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+                                setOpenCommentPopupId(null);
                                 if (openLikePopupId === t.id) {
                                   setOpenLikePopupId(null);
                                 } else if ((isMyPost || t.showLikesPublicly) && t.likes?.length > 0) {
@@ -1092,6 +1253,7 @@ Someone might find hope in your story....✨"
                             </button>
                           </div>
 
+                          {/* LIKES POPUP */}
                           {openLikePopupId === t.id && (
                             <div 
                               className="absolute bottom-full right-0 mb-3 w-[260px] bg-[#0A0A0F] border border-[#C8A97E]/30 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] z-50 animate-fade-in"
@@ -1109,7 +1271,6 @@ Someone might find hope in your story....✨"
                                   const isOldData = typeof likeData === 'string';
                                   const likeUid = isOldData ? likeData : likeData.uid;
                                   
-                                  // 🔥 MAGIC SYNC: Likes popup me bhi LIVE profile data dikhega 🔥
                                   const isMyLike = likeUid === auth.currentUser?.uid;
                                   const likerName = isMyLike ? (profile?.name || "Student") : (isOldData ? "Darpan User" : likeData.name);
                                   const likerPhoto = isMyLike ? profile?.photoURL : (isOldData ? null : likeData.photoURL);
@@ -1135,6 +1296,129 @@ Someone might find hope in your story....✨"
 
                               <div className="absolute top-full right-6 -mt-[1px] border-[6px] border-transparent border-t-[#C8A97E]/30"></div>
                               <div className="absolute top-full right-6 -mt-[2px] border-[6px] border-transparent border-t-[#0A0A0F]"></div>
+                            </div>
+                          )}
+
+                          {/* COMMENTS POPUP */}
+                          {openCommentPopupId === t.id && (
+                            <div 
+                              className="absolute bottom-full right-0 mb-3 w-[300px] md:w-[350px] bg-[#0A0A0F] border border-[#C8A97E]/30 rounded-xl shadow-[0_10px_50px_rgba(0,0,0,0.9)] z-50 animate-fade-in flex flex-col"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="flex justify-between items-center p-4 border-b border-white/5">
+                                <span className="font-serif text-[#C8A97E] text-base tracking-wide">Comments ({t.comments?.length || 0})</span>
+                                <button onClick={() => setOpenCommentPopupId(null)} className="text-[#8A8580] hover:text-white cursor-pointer transition-colors">
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+
+                              <div className="max-h-[250px] min-h-[100px] overflow-y-auto custom-scrollbar p-3 flex flex-col gap-3">
+                                {!t.comments || t.comments.length === 0 ? (
+                                  <div className="text-center font-serif text-[#5A5550] text-sm py-8">
+                                    No comments yet. Start the conversation!
+                                  </div>
+                                ) : (
+                                  t.comments.map((comment) => (
+                                    <div key={comment.id} className="flex flex-col bg-white/[0.02] p-3 rounded-xl border border-white/[0.02] gap-2">
+                                      <div className="flex items-start gap-3">
+                                        {comment.photoURL ? (
+                                          <img src={comment.photoURL} alt={comment.name} className="w-7 h-7 rounded-full object-cover border border-[#C8A97E]/30 shrink-0" />
+                                        ) : (
+                                          <div className="w-7 h-7 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center shrink-0">
+                                            <span className="font-serif text-xs font-bold text-[#C8A97E]">{comment.name.charAt(0).toUpperCase()}</span>
+                                          </div>
+                                        )}
+                                        <div className="flex flex-col flex-grow">
+                                          <div className="flex items-baseline gap-2 justify-between">
+                                            <span className="font-serif text-[#E8E4DC] text-sm font-semibold">{comment.name}</span>
+                                          </div>
+                                          <span className="font-serif text-[#A09A95] text-[13px] leading-snug mt-0.5 break-words">{comment.text}</span>
+                                          
+                                          {/* COMMENT INTERACTIONS (Like & Reply Buttons) */}
+                                          <div className="flex items-center gap-4 mt-2">
+                                            <button 
+                                              onClick={(e) => { e.stopPropagation(); toggleCommentLike(t, comment.id); }}
+                                              className="flex items-center gap-1 text-[#8A8580] hover:text-[#C8A97E] transition-colors cursor-pointer"
+                                            >
+                                              <Heart className={`w-3 h-3 ${comment.likes?.includes(auth.currentUser?.uid) ? 'fill-[#C8A97E] text-[#C8A97E]' : ''}`} />
+                                              <span className="font-mono text-[9px] font-bold">{comment.likes?.length || ''}</span>
+                                            </button>
+                                            
+                                            {/* 🔴 NEW: REPLY BUTTON */}
+                                            {allowsComments && (
+                                              <button 
+                                                onClick={() => setReplyingTo({ commentId: comment.id, name: comment.name })}
+                                                className="font-mono text-[9px] uppercase text-[#8A8580] hover:text-[#C8A97E] font-bold tracking-wider cursor-pointer"
+                                              >
+                                                Reply
+                                              </button>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* 🔴 NEW: RENDER NESTED REPLIES INSIDE THE THREAD */}
+                                      {comment.replies && comment.replies.map((reply) => (
+                                        <div key={reply.id} className="flex items-start gap-2 bg-white/[0.01] p-2 rounded-lg ml-6 border-l border-[#C8A97E]/20 mt-1 pl-3">
+                                          {reply.photoURL ? (
+                                            <img src={reply.photoURL} alt={reply.name} className="w-5 h-5 rounded-full object-cover border border-[#C8A97E]/20 shrink-0" />
+                                          ) : (
+                                            <div className="w-5 h-5 rounded-full bg-[#141419] border border-[#C8A97E]/20 flex items-center justify-center shrink-0">
+                                              <span className="font-serif text-[10px] font-bold text-[#C8A97E]">{reply.name.charAt(0).toUpperCase()}</span>
+                                            </div>
+                                          )}
+                                          <div className="flex flex-col">
+                                            <span className="font-serif text-[#E8E4DC] text-xs font-semibold">{reply.name}</span>
+                                            <span className="font-serif text-[#A09A95] text-xs leading-snug mt-0.5 break-words">{reply.text}</span>
+                                          </div>
+                                        </div>
+                                      ))}
+
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+
+                              {allowsComments ? (
+                                <div className="border-t border-white/5 bg-[#141419]/50 rounded-b-xl p-3 flex flex-col gap-2">
+                                  {/* 🔴 NEW: Replying notification band with dismiss option */}
+                                  {replyingTo && (
+                                    <div className="flex justify-between items-center bg-[#C8A97E]/10 border border-[#C8A97E]/20 px-2 py-1 rounded-md">
+                                      <span className="font-mono text-[9px] text-[#C8A97E] uppercase tracking-wider">Replying to {replyingTo.name}...</span>
+                                      <button onClick={() => setReplyingTo(null)} className="text-red-400 hover:text-white"><X className="w-3 h-3" /></button>
+                                    </div>
+                                  )}
+                                  <div className="flex gap-2">
+                                    <input 
+                                      type="text" 
+                                      value={commentText}
+                                      onChange={(e) => setCommentText(e.target.value)}
+                                      placeholder={replyingTo ? `Write a reply...` : "Add a comment..."}
+                                      className="flex-grow bg-[#1A1A24] border border-white/10 rounded-lg px-3 py-2 text-[#E8E4DC] text-sm font-serif focus:outline-none focus:border-[#C8A97E]/50"
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && commentText.trim()) {
+                                          if (replyingTo) handleAddReply(t, replyingTo.commentId);
+                                          else handleAddComment(t);
+                                        }
+                                      }}
+                                    />
+                                    <button 
+                                      onClick={() => {
+                                        if (replyingTo) handleAddReply(t, replyingTo.commentId);
+                                        else handleAddComment(t);
+                                      }}
+                                      disabled={!commentText.trim()}
+                                      className="bg-[#C8A97E] text-black p-2 rounded-lg hover:bg-white transition-colors disabled:opacity-50 cursor-pointer"
+                                    >
+                                      <Send className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="p-3 border-t border-white/5 bg-red-500/5 rounded-b-xl text-center">
+                                  <span className="font-mono text-[10px] text-red-400/80 uppercase tracking-widest">Comments are turned off</span>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>

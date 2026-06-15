@@ -72,7 +72,7 @@ export default function WeeklyAaina({ currentUser }) {
       if (!currentUser) { setLoading(false); return; }
       
       setLoading(true);
-      // 🔥 CRITICAL FIX: Turant purana data clear karo taaki UI pe pichla week na atke rahe
+      // Clear previous data immediately to avoid UI sticking
       setWeeklyData(null); 
 
       // Calculate Strict Date Range
@@ -88,7 +88,7 @@ export default function WeeklyAaina({ currentUser }) {
       const endStr = endDate.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
       setDateRangeText(`${startStr} - ${endStr}`);
 
-      // 🔥 V3 IDENTIFIER: 100% Fresh Start 🔥
+      // V3 IDENTIFIER: 100% Fresh Start
       const weekIdentifier = `${startDate.getFullYear()}_${startDate.getMonth() + 1}_${startDate.getDate()}`;
       const weekDocId = `${currentUser.uid}_v3_${weekIdentifier}`;
       const weekDocRef = doc(db, "weekly_reflections", weekDocId);
@@ -117,14 +117,14 @@ export default function WeeklyAaina({ currentUser }) {
           }
         }
 
-        // 3. SAFE FIRESTORE FETCH (Without Composite Index Error)
+        // 3. SAFE FIRESTORE FETCH
         const q = query(
           collection(db, "diaries"),
           where("userId", "==", currentUser.uid)
         );
         const querySnapshot = await getDocs(q);
 
-        // JavaScript Filter to bypass Firebase Error completely
+        // JavaScript Filter to bypass Firebase Composite Index Error completely
         const validDiaries = [];
         querySnapshot.forEach((docSnap) => {
           const data = docSnap.data();
@@ -134,7 +134,7 @@ export default function WeeklyAaina({ currentUser }) {
           }
         });
 
-        // 🚨 STRICT CHECK: If user didn't write anything this specific week, EXIT!
+        // STRICT CHECK: If user didn't write anything this specific week, EXIT!
         if (validDiaries.length === 0) { 
           setWeeklyData(null); 
           setLoading(false); 
@@ -196,33 +196,44 @@ export default function WeeklyAaina({ currentUser }) {
         const exactAverage = (totalMoodScore / totalDays).toFixed(1);
         const bestMomentText = bestDayObj ? bestDayObj.text : "No specific moments captured.";
 
+        // Default text fallback
         let patternText = "Your heart felt a bit of everything this week. A very human, very normal balance.";
         let oneTipText = "Take a deep breath and give yourself some grace. You are doing better than you think.";
         let sathiNoteText = "Life felt a little heavy this week, but I am always here for you, no matter what.";
+
+        // FLAG to check if AI generated actual insights
+        let aiSuccess = false;
 
         // 🔥 GEMINI AI GENERATION 🔥
         try {
           const summaryText = graphArray.map(d => `${d.day} (${d.emoji}): ${d.text}`).join(" | ");
 
-// 🔥 Naya Backend Call 🔥
-const aiResponse = await fetch("https://dapan-api-secure.onrender.com/api/generate-insights", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ summaryText: summaryText })
-});
-          const aiData = await aiResponse.json();
+          const aiResponse = await fetch("https://dapan-api-secure.onrender.com/api/generate-insights", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ summaryText: summaryText })
+          });
           
-          if (aiData.candidates && aiData.candidates[0]?.content?.parts[0]?.text) {
-            let rawText = aiData.candidates[0].content.parts[0].text.trim();
-            if (rawText.startsWith("```json")) {
-              rawText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+          if (aiResponse.ok) {
+            const aiData = await aiResponse.json();
+            
+            if (aiData.candidates && aiData.candidates[0]?.content?.parts[0]?.text) {
+              let rawText = aiData.candidates[0].content.parts[0].text.trim();
+              if (rawText.startsWith("```json")) {
+                rawText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+              }
+              
+              const parsedData = JSON.parse(rawText);
+              
+              patternText = parsedData.moodPattern || patternText;
+              oneTipText = parsedData.actionableTip || oneTipText;
+              sathiNoteText = parsedData.sathisNote || sathiNoteText;
+              
+              // If code reached here, AI response was valid and successful
+              aiSuccess = true;
             }
-            
-            const parsedData = JSON.parse(rawText);
-            
-            patternText = parsedData.moodPattern || patternText;
-            oneTipText = parsedData.actionableTip || oneTipText;
-            sathiNoteText = parsedData.sathisNote || sathiNoteText;
+          } else {
+            console.warn("Backend API error or waking up from sleep...");
           }
         } catch (aiErr) {
           console.error("🚨 AI Insights failed:", aiErr);
@@ -240,29 +251,37 @@ const aiResponse = await fetch("https://dapan-api-secure.onrender.com/api/genera
           sathiNote:    sathiNoteText, 
         };
 
-        // SAVE TO LOCAL CACHE (V3 KEYS)
-        if (weekOffset === 0) {
-          localStorage.setItem(cacheKeyDate, todayString);
-          localStorage.setItem(cacheKeyData, JSON.stringify(reportResult));
+        // Update the UI immediately with either real data or default fallback
+        setWeeklyData(reportResult);
+
+        // 🔥 CRITICAL FIX: CACHE & FIRESTORE SAVING (ONLY IF AI SUCCESSFUL) 🔥
+        if (aiSuccess) {
+          // SAVE TO LOCAL CACHE (V3 KEYS)
+          if (weekOffset === 0) {
+            localStorage.setItem(cacheKeyDate, todayString);
+            localStorage.setItem(cacheKeyData, JSON.stringify(reportResult));
+          }
+
+          // SAVE SECURELY TO FIRESTORE
+          try {
+            await setDoc(weekDocRef, {
+              userId: currentUser.uid,
+              weekOffset: weekOffset,
+              startDate: Timestamp.fromDate(startDate),
+              endDate: Timestamp.fromDate(endDate),
+              reportResult: reportResult,
+              lastUpdated: serverTimestamp()
+            }, { merge: true });
+          } catch (fsErr) {
+            console.error("🚨 Firestore save error:", fsErr);
+          }
+        } else {
+          console.log("⚠️ Showing default text because AI failed. Not saving to cache.");
         }
 
-        // 🔥 SAVE SECURELY TO FIRESTORE 🔥
-        try {
-          await setDoc(weekDocRef, {
-            userId: currentUser.uid,
-            weekOffset: weekOffset,
-            startDate: Timestamp.fromDate(startDate),
-            endDate: Timestamp.fromDate(endDate),
-            reportResult: reportResult,
-            lastUpdated: serverTimestamp()
-          }, { merge: true });
-        } catch (fsErr) {
-          console.error("🚨 Firestore save error:", fsErr);
-        }
-
-        // 🔥 AUTOMATIC SUNDAY EMAIL FOR CURRENT WEEK ONLY 🔥
+        // 🔥 AUTOMATIC SUNDAY EMAIL FOR CURRENT WEEK ONLY (Only if AI was successful) 🔥
         const userEmail = currentUser.email;
-        if (userEmail && weekOffset === 0) {
+        if (userEmail && weekOffset === 0 && aiSuccess) {
           const today = new Date();
           const isSunday = today.getDay() === 0; 
           const lastSentKey  = `aaina_lastEmail_${currentUser.uid}`;

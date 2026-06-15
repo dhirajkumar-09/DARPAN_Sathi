@@ -126,7 +126,7 @@ const Navbar = ({ currentPage, setPage, isLoggedIn, setIsLoggedIn, profile }) =>
     try {
       await signOut(auth);
       setIsLoggedIn(false);
-      setPage("login");
+      setPage("landing");
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -136,36 +136,44 @@ const Navbar = ({ currentPage, setPage, isLoggedIn, setIsLoggedIn, profile }) =>
     <nav className={`fixed top-0 inset-x-0 z-[100] px-6 md:px-12 lg:px-20 h-20 flex items-center justify-between transition-all duration-300 ${
       scrollY > 50 ? "bg-[#06060A]/90 backdrop-blur-md border-b border-[#C8A97E]/10 py-0" : "bg-transparent py-4"
     }`}>
-      <div className="font-serif text-2xl font-bold tracking-[0.2em] text-[#E8E4DC] cursor-pointer" onClick={() => isLoggedIn && setPage("home")}>
+      <div className="font-serif text-2xl font-bold tracking-[0.2em] text-[#E8E4DC] cursor-pointer" onClick={() => setPage(isLoggedIn ? "home" : "landing")}>
         DARP<span className="text-[#C8A97E]">AN</span>
       </div>
       <div className="hidden md:flex items-center gap-8">
-        {isLoggedIn && NAV_LINKS.map(link => (
-          <button key={link.id} onClick={() => setPage(link.id)}
-            className={`font-mono text-[11px] tracking-widest uppercase transition-all duration-300 cursor-pointer ${
-              link.id === "chat" ? "font-bold text-[#C8A97E] bg-[#C8A97E]/10 px-4 py-2 rounded-md hover:bg-[#C8A97E] hover:text-black shadow-[0_0_15px_rgba(200,169,126,0.15)] border border-[#C8A97E]/30"
-              : link.id === "report" ? "font-bold text-[#A8C87E] bg-[#A8C87E]/5 px-4 py-2 rounded-md hover:bg-[#A8C87E] hover:text-black shadow-[0_0_15px_rgba(168,200,126,0.1)] border border-[#A8C87E]/30"
-              : currentPage === link.id ? "text-[#C8A97E]" : "text-[#8A8580] hover:text-[#C8A97E]"
-            }`}
-          >
-            {link.label}
-          </button>
-        ))}
-        {isLoggedIn && (
-          <div className="flex items-center gap-4 border-l border-white/10 pl-6">
-            <div onClick={() => setPage("profile")} className="w-8 h-8 rounded-full border border-[#C8A97E]/40 overflow-hidden cursor-pointer hover:border-[#C8A97E] transition-all">
-              {profile.photoURL ? (
-                <img src={profile.photoURL} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-[#141419] flex items-center justify-center font-serif font-bold text-xs text-[#C8A97E]">
-                  {profile.name ? profile.name.charAt(0).toUpperCase() : "S"}
-                </div>
-              )}
+        {isLoggedIn ? (
+          <>
+            {NAV_LINKS.map(link => (
+              <button key={link.id} onClick={() => setPage(link.id)}
+                className={`font-mono text-[11px] tracking-widest uppercase transition-all duration-300 cursor-pointer ${
+                  link.id === "chat" ? "font-bold text-[#C8A97E] bg-[#C8A97E]/10 px-4 py-2 rounded-md hover:bg-[#C8A97E] hover:text-black shadow-[0_0_15px_rgba(200,169,126,0.15)] border border-[#C8A97E]/30"
+                  : link.id === "report" ? "font-bold text-[#A8C87E] bg-[#A8C87E]/5 px-4 py-2 rounded-md hover:bg-[#A8C87E] hover:text-black shadow-[0_0_15px_rgba(168,200,126,0.1)] border border-[#A8C87E]/30"
+                  : currentPage === link.id ? "text-[#C8A97E]" : "text-[#8A8580] hover:text-[#C8A97E]"
+                }`}
+              >
+                {link.label}
+              </button>
+            ))}
+            <div className="flex items-center gap-4 border-l border-white/10 pl-6">
+              <div onClick={() => setPage("profile")} className="w-8 h-8 rounded-full border border-[#C8A97E]/40 overflow-hidden cursor-pointer hover:border-[#C8A97E] transition-all">
+                {profile.photoURL ? (
+                  <img src={profile.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-[#141419] flex items-center justify-center font-serif font-bold text-xs text-[#C8A97E]">
+                    {profile.name ? profile.name.charAt(0).toUpperCase() : "S"}
+                  </div>
+                )}
+              </div>
+              <button onClick={handleLogout} className="font-mono flex items-center gap-2 text-[10px] tracking-widest px-4 py-2 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-black transition-all duration-300 uppercase cursor-pointer">
+                <LogOut className="w-3.5 h-3.5" /> Logout
+              </button>
             </div>
-            <button onClick={handleLogout} className="font-mono flex items-center gap-2 text-[10px] tracking-widest px-4 py-2 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-black transition-all duration-300 uppercase cursor-pointer">
-              <LogOut className="w-3.5 h-3.5" /> Logout
+          </>
+        ) : (
+          currentPage !== "login" && (
+            <button onClick={() => setPage("login")} className="font-mono flex items-center gap-2 text-[11px] font-bold tracking-widest px-6 py-2.5 bg-white/5 border border-white/10 text-white hover:border-[#C8A97E] hover:text-[#C8A97E] rounded-lg transition-all duration-300 uppercase cursor-pointer">
+               Log In!
             </button>
-          </div>
+          )
         )}
       </div>
     </nav>
@@ -418,7 +426,7 @@ const ChatPage = ({ messages, setMessages }) => {
         audioSourceRef.current = source;
         source.start();
       } else {
-          setIsSpeaking(false);
+         setIsSpeaking(false);
       }
     } catch (error) {
       console.error("TTS generation failed:", error);
@@ -451,7 +459,6 @@ const ChatPage = ({ messages, setMessages }) => {
     }
 
     try {
-      // FIX: Merge consecutive messages from the same role to prevent Gemini API crash
       const formattedMessages = [];
       for (const msg of newMessages) {
         const lastMsg = formattedMessages[formattedMessages.length - 1];
@@ -462,7 +469,6 @@ const ChatPage = ({ messages, setMessages }) => {
         }
       }
 
-      // Limit to last 6 messages and ensure the first is "user"
       let finalApiMessages = formattedMessages.slice(-6);
       if (finalApiMessages.length > 0 && finalApiMessages[0].role === "model") {
         finalApiMessages.shift();
@@ -678,14 +684,14 @@ const HomePage = ({ setPage, announcement }) => {
       setCharIndex(prev => isDeleting ? prev - 1 : prev + 1);
 
       if (!isDeleting && charIndex === currentFullText.length) {
-        setTypingSpeed(1500); // 1.5s pause when text is fully typed
+        setTypingSpeed(1500); 
         setIsDeleting(true);
       } else if (isDeleting && charIndex === 0) {
         setIsDeleting(false);
-        setCurrentPhraseIndex((prev) => (prev + 1) % phrases.length); // Cycle to next phrase
-        setTypingSpeed(300); // 300ms pause before starting next
+        setCurrentPhraseIndex((prev) => (prev + 1) % phrases.length); 
+        setTypingSpeed(300); 
       } else {
-        setTypingSpeed(isDeleting ? 40 : 80); // Fast delete (40ms), normal type (80ms)
+        setTypingSpeed(isDeleting ? 40 : 80); 
       }
     };
     timer = setTimeout(handleTyping, typingSpeed);
@@ -703,7 +709,6 @@ const HomePage = ({ setPage, announcement }) => {
     setIsMiniChatLoading(true);
 
     try {
-      // FIX: Merge consecutive messages for mini chat
       const geminiFormatMessages = [];
       for (const msg of newMessages) {
         const role = msg.from === "sathi" ? "model" : "user";
@@ -933,6 +938,7 @@ const HomePage = ({ setPage, announcement }) => {
     </div>
   );
 };
+
 const StoriesPage = ({ userStories, setUserStories, profile }) => {
   const [newStory, setNewStory] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1192,7 +1198,6 @@ const handleSubmit = async (e) => {
                 placeholder={`A safe space to share your thoughts , lessons and little victories.
 Write freely.....!!
                             
-
                                 Someone might find hope in your story...✨`}
                 className="w-full bg-[#141419] border border-white/10 rounded-2xl p-5 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-lg md:text-xl focus:outline-none focus:border-[#C8A97E]/50 transition-colors resize-y shadow-inner min-h-[200px]"
               />
@@ -2009,9 +2014,188 @@ const ProfilePage = ({ profile, setProfile }) => {
   );
 };
 
+// --- NEW LANDING PAGE ---
+// --- NEW LANDING PAGE ---
+// --- NEW LANDING PAGE ---
+// --- NEW SYMMETRICAL PREMIUM LANDING PAGE ---
+// --- NEW PREMIUM SYMMETRICAL LANDING PAGE ---
+const LandingPage = ({ setPage }) => {
+  return (
+    <div className="min-h-screen bg-[#06060A] flex flex-col relative overflow-hidden">
+      {/* --- ADVANCED ANIMATED BACKGROUND --- */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        {/* Subtle moving dot pattern */}
+        <div 
+          className="absolute inset-0 opacity-[0.04]" 
+          style={{ 
+            backgroundImage: "radial-gradient(#C8A97E 2px, transparent 2px)", 
+            backgroundSize: "40px 40px",
+            animation: "pulse 8s ease-in-out infinite" 
+          }} 
+        />
+        
+        {/* Deep, slowly moving glowing orbs */}
+        <div className="absolute rounded-full blur-[120px] w-[800px] h-[800px] -left-[10%] -top-[20%] bg-gradient-to-br from-[#C8A97E]/10 to-transparent animate-pulse" style={{ animationDuration: '7s' }} />
+        <div className="absolute rounded-full blur-[150px] w-[600px] h-[600px] right-[-5%] bottom-[-10%] bg-gradient-to-tl from-[#7EB8C8]/10 to-transparent animate-pulse" style={{ animationDuration: '10s' }} />
+      </div>
+
+      {/* --- MAIN CONTAINER --- */}
+      <main className="flex-grow flex flex-col justify-center relative z-10 px-6 md:px-10 lg:px-12 xl:px-16 pt-32 pb-16 w-full max-w-[1600px] mx-auto">
+        
+        {/* --- FLAWLESS FLEXBOX LAYOUT (Left -> Center -> Right) --- */}
+        <div className="flex flex-col xl:flex-row items-center justify-between gap-12 w-full">
+          
+          {/* ================= LEFT COLUMN (Cards) ================= */}
+          <div className="w-full xl:w-[28%] flex flex-col gap-8 order-2 xl:order-1">
+            
+            {/* Card 1: Sathi */}
+            <div className="opacity-0 animate-fade-in" style={{ animationDelay: "600ms", animationFillMode: "forwards" }}>
+              <div className="bg-white/[0.02] backdrop-blur-xl border border-white/[0.05] hover:border-[#C8A97E]/40 p-8 rounded-3xl flex flex-col gap-5 shadow-2xl hover:shadow-[0_10px_40px_rgba(200,169,126,0.1)] transition-all duration-500 hover:-translate-y-2 group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#C8A97E]/5 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-[#C8A97E]/10 transition-colors" />
+                <div className="w-14 h-14 shrink-0 rounded-2xl bg-white/[0.03] border border-white/10 group-hover:bg-[#C8A97E]/10 group-hover:border-[#C8A97E]/40 flex items-center justify-center group-hover:scale-110 transition-all duration-500 shadow-inner">
+                  <Mic className="w-6 h-6 text-[#C8A97E]" />
+                </div>
+                <div className="relative z-10">
+                  <h3 className="font-serif text-2xl text-[#E8E4DC] mb-3 group-hover:text-[#C8A97E] transition-colors">Talk to Sathi</h3>
+                  <p className="font-serif text-[#A09A95] leading-relaxed text-[16px]">A compassionate voice AI. Speak freely in Hindi or English without any judgment. Your raw thoughts are safe here.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Diary */}
+            <div className="opacity-0 animate-fade-in" style={{ animationDelay: "800ms", animationFillMode: "forwards" }}>
+              <div className="bg-white/[0.02] backdrop-blur-xl border border-white/[0.05] hover:border-[#E8E4DC]/30 p-8 rounded-3xl flex flex-col gap-5 shadow-2xl hover:shadow-[0_10px_40px_rgba(232,228,220,0.05)] transition-all duration-500 hover:-translate-y-2 group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-white/10 transition-colors" />
+                <div className="w-14 h-14 shrink-0 rounded-2xl bg-white/[0.03] border border-white/10 group-hover:bg-[#E8E4DC]/10 group-hover:border-[#E8E4DC]/40 flex items-center justify-center group-hover:scale-110 transition-all duration-500 shadow-inner">
+                  <BookOpen className="w-6 h-6 text-[#E8E4DC]" />
+                </div>
+                <div className="relative z-10">
+                  <h3 className="font-serif text-2xl text-[#E8E4DC] mb-3 group-hover:text-white transition-colors">Midnight Diary</h3>
+                  <p className="font-serif text-[#A09A95] leading-relaxed text-[16px]">A secure digital vault for your thoughts. Unload your mind and reflect deeply before you sleep every night.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* ================= CENTER COLUMN (Hero Text) ================= */}
+          <div className="w-full xl:w-[44%] flex flex-col items-center text-center px-4 order-1 xl:order-2">
+            
+            {/* Sparkle Badge */}
+            <div 
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#C8A97E]/5 border border-[#C8A97E]/20 mb-10 shadow-[0_0_20px_rgba(200,169,126,0.1)] hover:bg-[#C8A97E]/10 transition-all cursor-default opacity-0 animate-fade-in"
+              style={{ animationDelay: "0ms", animationFillMode: "forwards" }}
+            >
+              <Sparkles className="w-4 h-4 text-[#C8A97E] animate-pulse" />
+              <span className="font-mono text-[10px] tracking-[0.25em] text-[#C8A97E] uppercase font-bold">
+                Your Safe Digital Space
+              </span>
+            </div>
+
+            {/* Main Heading */}
+            <h1 
+              className="font-serif text-6xl md:text-7xl lg:text-8xl font-light leading-[1.1] tracking-tight mb-8 opacity-0 animate-fade-in"
+              style={{ animationDelay: "200ms", animationFillMode: "forwards" }}
+            >
+              Reflect on <br />
+              <em className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#C8A97E] via-[#E8E4DC] to-[#C8A97E] not-italic relative inline-block drop-shadow-[0_0_25px_rgba(200,169,126,0.3)] pb-2 mt-2">
+                what matters most.
+              </em>
+            </h1>
+            
+            {/* Subtext */}
+            <p 
+              className="font-serif text-lg md:text-xl text-[#A09A95] font-light leading-relaxed max-w-lg mx-auto mb-12 opacity-0 animate-fade-in"
+              style={{ animationDelay: "400ms", animationFillMode: "forwards" }}
+            >
+              A sanctuary where your feelings can be expressed without hesitation. Track your mental well-being, share your untold stories, and speak to an AI companion who truly listens.
+            </p>
+
+            {/* CTA Button */}
+            <div className="opacity-0 animate-fade-in" style={{ animationDelay: "500ms", animationFillMode: "forwards" }}>
+              <button 
+                onClick={() => setPage("login")} 
+                className="relative px-12 py-5 bg-gradient-to-r from-[#C8A97E] to-[#B3936B] text-black font-mono text-sm tracking-widest uppercase font-bold transition-all duration-500 flex items-center justify-center gap-3 group rounded-xl mx-auto cursor-pointer hover:scale-105 hover:shadow-[0_0_50px_rgba(200,169,126,0.4)] overflow-hidden"
+              >
+                <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-12" />
+                <span className="relative z-10">Get Started!</span> 
+                <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1.5 transition-transform" />
+              </button>
+            </div>
+
+          </div>
+
+          {/* ================= RIGHT COLUMN (Cards) ================= */}
+          <div className="w-full xl:w-[28%] flex flex-col gap-8 order-3 xl:order-3">
+            
+            {/* Card 3: Canvas */}
+            <div className="opacity-0 animate-fade-in" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
+              <div className="bg-white/[0.02] backdrop-blur-xl border border-white/[0.05] hover:border-[#A8C87E]/40 p-8 rounded-3xl flex flex-col gap-5 shadow-2xl hover:shadow-[0_10px_40px_rgba(168,200,126,0.1)] transition-all duration-500 hover:-translate-y-2 group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#A8C87E]/5 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-[#A8C87E]/10 transition-colors" />
+                <div className="w-14 h-14 shrink-0 rounded-2xl bg-white/[0.03] border border-white/10 group-hover:bg-[#A8C87E]/10 group-hover:border-[#A8C87E]/40 flex items-center justify-center group-hover:scale-110 transition-all duration-500 shadow-inner">
+                  <BarChart className="w-6 h-6 text-[#A8C87E]" />
+                </div>
+                <div className="relative z-10">
+                  <h3 className="font-serif text-2xl text-[#E8E4DC] mb-3 group-hover:text-[#A8C87E] transition-colors">Mood Canvas</h3>
+                  <p className="font-serif text-[#A09A95] leading-relaxed text-[16px]">Visually track your emotional patterns week over week. Gain deep insights to better understand your mind.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 4: Stories */}
+            <div className="opacity-0 animate-fade-in" style={{ animationDelay: "900ms", animationFillMode: "forwards" }}>
+              <div className="bg-white/[0.02] backdrop-blur-xl border border-white/[0.05] hover:border-[#7EB8C8]/40 p-8 rounded-3xl flex flex-col gap-5 shadow-2xl hover:shadow-[0_10px_40px_rgba(126,184,200,0.1)] transition-all duration-500 hover:-translate-y-2 group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#7EB8C8]/5 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-[#7EB8C8]/10 transition-colors" />
+                <div className="w-14 h-14 shrink-0 rounded-2xl bg-white/[0.03] border border-white/10 group-hover:bg-[#7EB8C8]/10 group-hover:border-[#7EB8C8]/40 flex items-center justify-center group-hover:scale-110 transition-all duration-500 shadow-inner">
+                  <Globe className="w-6 h-6 text-[#7EB8C8]" />
+                </div>
+                <div className="relative z-10">
+                  <h3 className="font-serif text-2xl text-[#E8E4DC] mb-3 group-hover:text-[#7EB8C8] transition-colors">Real Stories</h3>
+                  <p className="font-serif text-[#A09A95] leading-relaxed text-[16px]">Read or share profound life experiences. Find hope and courage in the journeys of others walking similar paths.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* ================= BOTTOM PREMIUM QUOTE SECTION ================= */}
+        <div className="mt-32 mb-10 w-full max-w-4xl mx-auto flex flex-col items-center text-center opacity-0 animate-fade-in" style={{ animationDelay: "1200ms", animationFillMode: "forwards" }}>
+          
+          {/* Elegant fading vertical line */}
+          <div className="w-px h-32 bg-gradient-to-b from-transparent via-[#C8A97E]/50 to-transparent mb-12" />
+          
+          {/* Large Italic Quote */}
+          <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-[#E8E4DC] font-light leading-snug mb-10 italic opacity-90">
+            "The clearest reflection is found in a quiet mind."
+          </h2>
+          
+          {/* Bottom decorative element */}
+          <div className="flex items-center gap-6">
+            <div className="w-12 h-px bg-gradient-to-r from-transparent to-[#8A8580]/60" />
+            <span className="font-mono text-[10px] md:text-xs tracking-[0.4em] text-[#8A8580] uppercase">
+              Discover Clarity
+            </span>
+            <div className="w-12 h-px bg-gradient-to-l from-transparent to-[#8A8580]/60" />
+          </div>
+
+        </div>
+
+      </main>
+
+      {/* Keyframes for the button shine effect */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes shimmer {
+          100% { transform: translateX(100%); }
+        }
+      `}} />
+    </div>
+  );
+};
 // --- PRIMARY APP ORCHESTRATION ---
 export default function App() {
-  const [currentPage, setCurrentPage] = useState("login"); 
+  const [currentPage, setCurrentPage] = useState("landing"); 
   const [isMobile, setIsMobile] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [announcement, setAnnouncement] = useState("");
@@ -2144,12 +2328,15 @@ export default function App() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (!isLoggedIn) setCurrentPage("login");
-    else if (isLoggedIn && currentPage === "login") setCurrentPage("home");
+    if (!isLoggedIn && currentPage !== "login") setCurrentPage("landing");
+    else if (isLoggedIn && (currentPage === "login" || currentPage === "landing")) setCurrentPage("home");
   }, [isLoggedIn, currentPage]);
 
   const renderPage = () => {
-    if (!isLoggedIn) return <AuthPage setPage={setCurrentPage} setIsLoggedIn={setIsLoggedIn} />;
+    if (!isLoggedIn) {
+      if (currentPage === "login") return <AuthPage setPage={setCurrentPage} setIsLoggedIn={setIsLoggedIn} />;
+      return <LandingPage setPage={setCurrentPage} />;
+    }
     
     switch(currentPage) {
       case "home": return <HomePage setPage={setCurrentPage} announcement={announcement} />;

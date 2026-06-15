@@ -196,36 +196,36 @@ const Footer = () => {
             </button>
             <h3 className="font-serif text-2xl text-[#E8E4DC] mb-4">Privacy Policy</h3>
             <div className="font-serif text-[#A09A95] leading-relaxed text-sm overflow-y-auto max-h-[50vh] pr-4 space-y-4 custom-scrollbar">
-  <p className="italic text-xs border-b border-[#C8A97E]/20 pb-2">
-    Effective Date: June, 2026
-  </p>
+              <p className="italic text-xs border-b border-[#C8A97E]/20 pb-2">
+                Effective Date: June, 2026
+              </p>
 
-  <div>
-    <h4 className="text-[#C8A97E] font-mono uppercase tracking-wider text-xs mb-1">1. Information We Collect</h4>
-    <p><strong className="text-[#E8E4DC]">Profile & Content:</strong> Your name, email, Midnight Diary entries, Mood Canvas emojis, and private chats with Sathi.</p>
-  </div>
+              <div>
+                <h4 className="text-[#C8A97E] font-mono uppercase tracking-wider text-xs mb-1">1. Information We Collect</h4>
+                <p><strong className="text-[#E8E4DC]">Profile & Content:</strong> Your name, email, Midnight Diary entries, Mood Canvas emojis, and private chats with Sathi.</p>
+              </div>
 
-  <div>
-    <h4 className="text-[#C8A97E] font-mono uppercase tracking-wider text-xs mb-1">2. How We Use Your Data</h4>
-    <p>We use your data strictly to power Darpan's core features. <strong className="text-red-400">We do not and will never sell your personal data.</strong></p>
-  </div>
+              <div>
+                <h4 className="text-[#C8A97E] font-mono uppercase tracking-wider text-xs mb-1">2. How We Use Your Data</h4>
+                <p>We use your data strictly to power Darpan's core features. <strong className="text-red-400">We do not and will never sell your personal data.</strong></p>
+              </div>
 
-  <div>
-    <h4 className="text-[#C8A97E] font-mono uppercase tracking-wider text-xs mb-1">3. Enterprise-Level Security</h4>
-    <p><strong className="text-[#E8E4DC]">100% Private:</strong> Your diaries, chats, and private stories are locked cryptographically via Firebase Row-Level Security. No other user can read them.</p>
-    <p className="mt-1"><strong className="text-[#E8E4DC]">Public Stories:</strong> Only stories you explicitly publish can be viewed by others.</p>
-  </div>
+              <div>
+                <h4 className="text-[#C8A97E] font-mono uppercase tracking-wider text-xs mb-1">3. Enterprise-Level Security</h4>
+                <p><strong className="text-[#E8E4DC]">100% Private:</strong> Your diaries, chats, and private stories are locked cryptographically via Firebase Row-Level Security. No other user can read them.</p>
+                <p className="mt-1"><strong className="text-[#E8E4DC]">Public Stories:</strong> Only stories you explicitly publish can be viewed by others.</p>
+              </div>
 
-  <div>
-    <h4 className="text-[#C8A97E] font-mono uppercase tracking-wider text-xs mb-1">4. Your Rights & Contact</h4>
-    <p>You have full control to read, edit, or delete your data at any time. For questions, contact the developer:</p>
-  </div>
-  
-  <div className="bg-[#C8A97E]/5 p-3 rounded-lg border border-[#C8A97E]/30 mt-2">
-    <div className="text-[#E8E4DC] text-xs"><strong>Developer:</strong> Dhiraj</div>
-    <div className="text-[#E8E4DC] text-xs mt-1"><strong>Email:</strong> darpansathi01@gmail.com</div>
-  </div>
-</div>
+              <div>
+                <h4 className="text-[#C8A97E] font-mono uppercase tracking-wider text-xs mb-1">4. Your Rights & Contact</h4>
+                <p>You have full control to read, edit, or delete your data at any time. For questions, contact the developer:</p>
+              </div>
+              
+              <div className="bg-[#C8A97E]/5 p-3 rounded-lg border border-[#C8A97E]/30 mt-2">
+                <div className="text-[#E8E4DC] text-xs"><strong>Developer:</strong> Dhiraj</div>
+                <div className="text-[#E8E4DC] text-xs mt-1"><strong>Email:</strong> darpansathi01@gmail.com</div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -292,79 +292,78 @@ const ChatPage = ({ messages, setMessages }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
 
-// 1. Text-to-Speech Logic (AI Voice Output) - Updated for Devanagari/Hindi support
-const speakText = (text) => {
-  if (!isAudioOutputEnabled) return;
+  // Text-to-Speech Logic
+  const speakText = (text) => {
+    if (!isAudioOutputEnabled) return;
 
-  if (!window.speechSynthesis) {
-    console.error("Browser does not support Text-to-Speech functionality.");
-    return;
-  }
-
-  window.speechSynthesis.cancel();
-
-  setTimeout(() => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    const voices = window.speechSynthesis.getVoices();
-    const bestVoice = voices.find(v => v.lang === 'hi-IN') || voices.find(v => v.lang === 'en-IN');
-
-    if (bestVoice) {
-      utterance.voice = bestVoice;
+    if (!window.speechSynthesis) {
+      console.error("Browser does not support Text-to-Speech functionality.");
+      return;
     }
 
-    utterance.rate = 0.9;   
-    utterance.pitch = 1.0;  
-    utterance.lang = 'hi-IN'; 
+    window.speechSynthesis.cancel();
 
-    // UI Sync Logic
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = (event) => {
-      console.error("Voice synthesis error:", event.error);
-      setIsSpeaking(false);
+    setTimeout(() => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      
+      const voices = window.speechSynthesis.getVoices();
+      const bestVoice = voices.find(v => v.lang === 'hi-IN') || voices.find(v => v.lang === 'en-IN');
+
+      if (bestVoice) {
+        utterance.voice = bestVoice;
+      }
+
+      utterance.rate = 0.9;   
+      utterance.pitch = 1.0;  
+      utterance.lang = 'hi-IN'; 
+
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = (event) => {
+        console.error("Voice synthesis error:", event.error);
+        setIsSpeaking(false);
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }, 100); 
+  };
+
+  // Speech-to-Text Logic
+  const handleVoiceInput = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      alert("Your browser does not support Voice Input. Please use Google Chrome or Microsoft Edge.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-IN'; 
+    recognition.continuous = false; 
+    recognition.interimResults = false; 
+
+    recognition.onstart = () => setIsRecording(true);
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setInputValue(transcript);
     };
 
-    window.speechSynthesis.speak(utterance);
-  }, 100); 
-};
-// 2. Speech-to-Text Logic (User Microphone Input)
-const handleVoiceInput = () => {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  
-  if (!SpeechRecognition) {
-    alert("Your browser does not support Voice Input. Please use Google Chrome or Microsoft Edge.");
-    return;
-  }
+    recognition.onerror = (event) => {
+      console.error("Microphone error:", event.error);
+      setIsRecording(false);
+      if (event.error === 'not-allowed') {
+        alert("Microphone access blocked. Please allow microphone permissions in your browser URL bar.");
+      }
+    };
 
-  const recognition = new SpeechRecognition();
-  recognition.lang = 'en-IN'; 
-  recognition.continuous = false; 
-  recognition.interimResults = false; 
-
-  recognition.onstart = () => setIsRecording(true);
-
-  recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    setInputValue(transcript);
+    recognition.onend = () => setIsRecording(false);
+    recognition.start();
   };
-
-  recognition.onerror = (event) => {
-    console.error("Microphone error:", event.error);
-    setIsRecording(false);
-    if (event.error === 'not-allowed') {
-      alert("Microphone access blocked. Please allow microphone permissions in your browser URL bar.");
-    }
-  };
-
-  recognition.onend = () => setIsRecording(false);
-  recognition.start();
-};
 
   const toggleRecording = () => {
     if (!recognitionRef.current) {
@@ -391,12 +390,11 @@ const handleVoiceInput = () => {
     
     try {
       setIsSpeaking(true);
-      // 🔥 Naya Backend Call (Voice TTS ke liye) 🔥
-const response = await fetch("https://dapan-api-secure.onrender.com/api/voice", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ text: text })
-});
+      const response = await fetch("https://dapan-api-secure.onrender.com/api/voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text })
+      });
       const data = await response.json();
       const inlineData = data.candidates?.[0]?.content?.parts?.[0]?.inlineData;
       
@@ -428,7 +426,7 @@ const response = await fetch("https://dapan-api-secure.onrender.com/api/voice", 
     }
   };
 
- const handleSendMessage = async () => {
+  const handleSendMessage = async () => {
     if (!inputValue.trim() || isTyping) return;      
 
     const currentText  = inputValue.trim();
@@ -453,36 +451,36 @@ const response = await fetch("https://dapan-api-secure.onrender.com/api/voice", 
     }
 
     try {
-      let apiMessages = [...newMessages];
-      
-      // 🔥 SMART TOKEN OPTIMIZATION: Sirf last 6 messages API ko bhejo
-      if (apiMessages.length > 6) {
-        apiMessages = apiMessages.slice(-6); 
+      // FIX: Merge consecutive messages from the same role to prevent Gemini API crash
+      const formattedMessages = [];
+      for (const msg of newMessages) {
+        const lastMsg = formattedMessages[formattedMessages.length - 1];
+        if (lastMsg && lastMsg.role === msg.role) {
+          lastMsg.parts[0].text += " | " + msg.parts[0].text;
+        } else {
+          formattedMessages.push({ role: msg.role, parts: [{ text: msg.parts[0].text }] });
+        }
       }
 
-      // Gemini REST API strict hai, list ka pehla message 'user' hona chahiye
-      if (apiMessages.length > 0 && apiMessages[0].role === "model") {
-        apiMessages = apiMessages.slice(1);
+      // Limit to last 6 messages and ensure the first is "user"
+      let finalApiMessages = formattedMessages.slice(-6);
+      if (finalApiMessages.length > 0 && finalApiMessages[0].role === "model") {
+        finalApiMessages.shift();
       }
 
-     const response = await fetch("https://dapan-api-secure.onrender.com/api/chat", {
+      const response = await fetch("https://dapan-api-secure.onrender.com/api/chat", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMessages }) // Sirf messages backend ko bheje
+        body: JSON.stringify({ messages: finalApiMessages }) 
       });
-      // const data = await response.json();
-      // ... baki ka code same rahega ...
+      
       const data = await response.json();
 
       if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
         const botReplyText = data.candidates[0].content.parts[0].text;
-
         setMessages(prev => [...prev, { role: "model", parts: [{ text: botReplyText }] }]);
-
         speakText(
-          botReplyText
-            .replace(/\*/g, '')
-            .replace(/[\u{1F600}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+          botReplyText.replace(/\*/g, '').replace(/[\u{1F600}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
         );
 
         if (auth.currentUser) {
@@ -496,13 +494,14 @@ const response = await fetch("https://dapan-api-secure.onrender.com/api/voice", 
           } catch (err) { console.error("Error saving AI message:", err); }
         }
       } else {
-        const fallback = "I'm sorry, I didn't quite catch that. Could you share it again?";
+        console.error("Gemini rejected the payload:", data);
+        const fallback = "There seems to be a network issue. Could you please say that again?";
         setMessages(prev => [...prev, { role: "model", parts: [{ text: fallback }] }]);
         speakText(fallback);
       }
     } catch (err) {
       console.error("Gemini error:", err);
-      setMessages(prev => [...prev, { role: "model", parts: [{ text: "There seems to be a connection issue. Please try again in a moment." }] }]);
+      setMessages(prev => [...prev, { role: "model", parts: [{ text: "Connection error. Please try again in a minute." }] }]);
     } finally {
       setIsTyping(false);
     }
@@ -618,17 +617,17 @@ const response = await fetch("https://dapan-api-secure.onrender.com/api/voice", 
         <div className="bg-[#0A0A0F]/90 backdrop-blur-xl border border-[#C8A97E]/20 rounded-b-2xl p-4 md:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
           <div className="relative flex items-center gap-2">
             <button
-  type="button"
-  onClick={handleVoiceInput}
-  className={`p-3.5 rounded-xl border transition-all duration-300 cursor-pointer shadow-inner shrink-0 ${
-    isRecording 
-      ? "bg-red-500/20 border-red-500/50 text-red-400 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.4)]" 
-      : "bg-[#141419] border-white/10 text-[#C8A97E] hover:bg-white/5 hover:border-[#C8A97E]/30"
-  }`}
-  title={isRecording ? "Listening to your voice..." : "Click to speak"}
->
-  {isRecording ? <Mic className="w-5 h-5 animate-bounce" /> : <MicOff className="w-5 h-5" />}
-</button>
+              type="button"
+              onClick={handleVoiceInput}
+              className={`p-3.5 rounded-xl border transition-all duration-300 cursor-pointer shadow-inner shrink-0 ${
+                isRecording 
+                  ? "bg-red-500/20 border-red-500/50 text-red-400 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.4)]" 
+                  : "bg-[#141419] border-white/10 text-[#C8A97E] hover:bg-white/5 hover:border-[#C8A97E]/30"
+              }`}
+              title={isRecording ? "Listening to your voice..." : "Click to speak"}
+            >
+              {isRecording ? <Mic className="w-5 h-5 animate-bounce" /> : <MicOff className="w-5 h-5" />}
+            </button>
             <textarea
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
@@ -652,19 +651,48 @@ const response = await fetch("https://dapan-api-secure.onrender.com/api/voice", 
 };
 
 const HomePage = ({ setPage, announcement }) => {
-  const [typedIndex, setTypedIndex] = useState(0);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState("idle");
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
 
-  // 🔥 NEW STATE FOR HOMEPAGE MINI-CHAT 🔥
+  // Mini-Chat States
   const [miniChatHistory, setMiniChatHistory] = useState([
     { from: "sathi", text: "Hey — how was today? Feel free to speak freely." }
   ]);
   const [miniChatInput, setMiniChatInput] = useState("");
   const [isMiniChatLoading, setIsMiniChatLoading] = useState(false);
+
+  // Smooth Typing States
+  const phrases = React.useMemo(() => [ "Speak your mind.", "Find your calm.", "Hear a warm voice.", "Know yourself better." ], []);
+  const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
+  const [charIndex, setCharIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [typingSpeed, setTypingSpeed] = useState(80);
+
+  useEffect(() => {
+    let timer;
+    const handleTyping = () => {
+      const currentFullText = phrases[currentPhraseIndex];
+      setCharIndex(prev => isDeleting ? prev - 1 : prev + 1);
+
+      if (!isDeleting && charIndex === currentFullText.length) {
+        setTypingSpeed(1500); // 1.5s pause when text is fully typed
+        setIsDeleting(true);
+      } else if (isDeleting && charIndex === 0) {
+        setIsDeleting(false);
+        setCurrentPhraseIndex((prev) => (prev + 1) % phrases.length); // Cycle to next phrase
+        setTypingSpeed(300); // 300ms pause before starting next
+      } else {
+        setTypingSpeed(isDeleting ? 40 : 80); // Fast delete (40ms), normal type (80ms)
+      }
+    };
+    timer = setTimeout(handleTyping, typingSpeed);
+    return () => clearTimeout(timer); 
+  }, [charIndex, isDeleting, currentPhraseIndex, phrases, typingSpeed]);
+
+  const displayText = phrases[currentPhraseIndex].substring(0, charIndex);
 
   const handleMiniChatSend = async () => {
     if (!miniChatInput.trim() || isMiniChatLoading) return;
@@ -675,15 +703,28 @@ const HomePage = ({ setPage, announcement }) => {
     setIsMiniChatLoading(true);
 
     try {
-      const geminiFormatMessages = newMessages.map((msg) => ({
-        role: msg.from === "sathi" ? "model" : "user",
-        parts: [{ text: msg.text }]
-      }));
+      // FIX: Merge consecutive messages for mini chat
+      const geminiFormatMessages = [];
+      for (const msg of newMessages) {
+        const role = msg.from === "sathi" ? "model" : "user";
+        const lastMsg = geminiFormatMessages[geminiFormatMessages.length - 1];
+        
+        if (lastMsg && lastMsg.role === role) {
+          lastMsg.parts[0].text += " | " + msg.text;
+        } else {
+          geminiFormatMessages.push({ role: role, parts: [{ text: msg.text }] });
+        }
+      }
+
+      let finalApiMessages = geminiFormatMessages.slice(-6);
+      if (finalApiMessages.length > 0 && finalApiMessages[0].role === "model") {
+         finalApiMessages.shift();
+      }
 
       const response = await fetch("https://dapan-api-secure.onrender.com/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: geminiFormatMessages })
+        body: JSON.stringify({ messages: finalApiMessages })
       });
 
       const data = await response.json();
@@ -691,10 +732,13 @@ const HomePage = ({ setPage, announcement }) => {
       if (data && data.candidates && data.candidates[0].content) {
         const sathiReply = data.candidates[0].content.parts[0].text;
         setMiniChatHistory((prev) => [...prev, { from: "sathi", text: sathiReply }]);
+      } else {
+        console.error("Mini Chat Rejected:", data);
+        setMiniChatHistory((prev) => [...prev, { from: "sathi", text: "Oops, I didn't quite catch that. Could you say it again?" }]);
       }
     } catch (error) {
       console.error("Mini Chat Error:", error);
-      setMiniChatHistory((prev) => [...prev, { from: "sathi", text: "Sathi network se connect nahi ho paa raha hai. Thodi der baad try karo." }]);
+      setMiniChatHistory((prev) => [...prev, { from: "sathi", text: "Unable to connect to the server right now. Please try again." }]);
     } finally {
       setIsMiniChatLoading(false);
     }
@@ -729,16 +773,6 @@ const HomePage = ({ setPage, announcement }) => {
       setFeedbackStatus("idle");
     }
   };
-
-  const phrases = [ "Speak your mind.", "Find your calm.", "Hear a warm voice.", "Know yourself better." ];
-  const currentPhrase = phrases[Math.floor(typedIndex / (phrases[0].length + 20)) % phrases.length];
-  const charPos = typedIndex % (currentPhrase.length + 20);
-  const displayText = charPos <= currentPhrase.length ? currentPhrase.slice(0, charPos) : currentPhrase;
-
-  useEffect(() => {
-    const t = setInterval(() => setTypedIndex(i => i + 1), 80);
-    return () => clearInterval(t);
-  }, []);
 
   return (
     <div className="animate-fade-in">
@@ -795,12 +829,18 @@ const HomePage = ({ setPage, announcement }) => {
             </div>
           </div>
 
-          <div className="relative mx-auto w-full max-w-md lg:max-w-none">
-            <div className="bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-2xl p-6 md:p-8 shadow-2xl relative" style={{ animation: "borderGlow 4s ease-in-out infinite" }}>
-              <div className="flex items-center gap-4 border-b border-[#C8A97E]/10 pb-5 mb-6">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#C8A97E] to-[#8A724E] flex items-center justify-center font-serif text-xl font-bold text-black shadow-inner"></div>
+          <div className="relative mx-auto w-full max-w-md lg:max-w-[420px]">
+            <div className="bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-2xl flex flex-col shadow-2xl overflow-hidden" style={{ animation: "borderGlow 4s ease-in-out infinite" }}>
+              
+              {/* Widget Header */}
+              <div className="flex items-center gap-4 bg-[#141419]/50 p-5 border-b border-[#C8A97E]/10">
+                <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#C8A97E] to-[#8A724E] flex items-center justify-center font-serif text-xl font-bold text-black shadow-inner">
+                  S
+                </div>
                 <div>
-                  <div className="font-serif text-lg font-semibold tracking-wide flex items-center gap-2">Sathi <Volume2 className="w-4 h-4 text-[#C8A97E] opacity-70" /></div>
+                  <div className="font-serif text-lg font-semibold tracking-wide flex items-center gap-2 text-[#E8E4DC]">
+                    Sathi <Volume2 className="w-4 h-4 text-[#C8A97E] opacity-70" />
+                  </div>
                   <div className="flex items-center gap-2 mt-0.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#A8C87E] animate-pulse" />
                     <span className="font-mono text-[9px] tracking-widest text-[#8A8580] uppercase">Online · Test Sathi Here</span>
@@ -808,8 +848,8 @@ const HomePage = ({ setPage, announcement }) => {
                 </div>
               </div>
               
-              {/* 🔥 LIVE MINI CHAT MAPPED HERE 🔥 */}
-              <div className="space-y-4 max-h-[250px] overflow-y-auto custom-scrollbar pr-2 pb-10">
+              {/* Chat History */}
+              <div className="space-y-4 h-[260px] overflow-y-auto custom-scrollbar p-5">
                 {miniChatHistory.map((msg, i) => (
                   <div key={i} className={`flex ${msg.from === "user" ? "justify-end" : "justify-start"}`} style={{ animation: `fadeIn 0.4s ease both` }}>
                     <div className={`max-w-[85%] p-4 text-[14px] md:text-[15px] font-serif leading-relaxed flex items-start gap-2 ${msg.from === "user" ? "bg-[#C8A97E]/10 border border-[#C8A97E]/30 rounded-2xl rounded-tr-sm text-[#E8E4DC]" : "bg-white/5 border border-white/10 rounded-2xl rounded-tl-sm text-[#C4C0BB]"}`}>
@@ -829,33 +869,37 @@ const HomePage = ({ setPage, announcement }) => {
                   </div>
                 )}
               </div>
-            </div>
-            
-            {/* 🔥 AESTHETIC INPUT BOX INCORPORATED 🔥 */}
-            <div className="absolute -bottom-6 md:-bottom-8 right-4 md:right-8 bg-[#06060A] border border-[#C8A97E]/40 rounded-full py-2 px-5 shadow-xl backdrop-blur-md z-20 w-[85%] md:w-[350px] flex items-center justify-between">
-              <input 
-                type="text" 
-                value={miniChatInput}
-                onChange={(e) => setMiniChatInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleMiniChatSend()}
-                placeholder={`${displayText}|`}
-                className="bg-transparent border-none outline-none text-[#E8E4DC] placeholder:text-[#C8A97E] font-mono text-[10px] md:text-xs w-full pr-2"
-                disabled={isMiniChatLoading}
-              />
-              <button onClick={handleMiniChatSend} disabled={isMiniChatLoading || !miniChatInput.trim()} className="text-[#C8A97E] hover:text-white transition-colors cursor-pointer disabled:opacity-50">
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
+              
+              {/* Widget Input */}
+              <div className="bg-[#06060A] p-3 border-t border-[#C8A97E]/20 flex items-center gap-3">
+                <input 
+                  type="text" 
+                  value={miniChatInput}
+                  onChange={(e) => setMiniChatInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleMiniChatSend()}
+                  placeholder={`${displayText}|`}
+                  className="flex-grow bg-transparent border-none outline-none text-[#E8E4DC] placeholder:text-[#C8A97E]/70 font-mono text-[11px] md:text-xs pl-2"
+                  disabled={isMiniChatLoading}
+                />
+                <button 
+                  onClick={handleMiniChatSend} 
+                  disabled={isMiniChatLoading || !miniChatInput.trim()} 
+                  className="w-9 h-9 rounded-full bg-[#C8A97E]/10 flex items-center justify-center text-[#C8A97E] hover:bg-[#C8A97E] hover:text-black transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+                >
+                  <Send className="w-4 h-4 -ml-0.5" />
+                </button>
+              </div>
 
+            </div>
           </div>
         </div>
 
-<button 
-  onClick={() => setIsFeedbackModalOpen(true)} 
-  className="fixed bottom-8 right-8 md:bottom-10 md:right-10 z-[100] bg-[#141419] border border-[#C8A97E]/30 text-[#C8A97E] p-4 rounded-full shadow-[0_0_25px_rgba(200,169,126,0.2)] hover:bg-[#C8A97E] hover:text-black transition-all duration-300 cursor-pointer flex items-center justify-center group"
->
-  <MessageCircle className="w-6 h-6 group-hover:scale-110 transition-transform" />
-</button>
+        <button 
+          onClick={() => setIsFeedbackModalOpen(true)} 
+          className="fixed bottom-8 right-8 md:bottom-10 md:right-10 z-[100] bg-[#141419] border border-[#C8A97E]/30 text-[#C8A97E] p-4 rounded-full shadow-[0_0_25px_rgba(200,169,126,0.2)] hover:bg-[#C8A97E] hover:text-black transition-all duration-300 cursor-pointer flex items-center justify-center group"
+        >
+          <MessageCircle className="w-6 h-6 group-hover:scale-110 transition-transform" />
+        </button>
 
         {isFeedbackModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
@@ -878,7 +922,7 @@ const HomePage = ({ setPage, announcement }) => {
                   </div>
                   <textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Tell us how Darpan makes you feel..." className="w-full bg-[#141419] border border-white/10 rounded-xl p-4 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-[16px] focus:outline-none focus:border-[#C8A97E]/50 transition-colors resize-none shadow-inner min-h-[120px] custom-scrollbar" />
                   <button onClick={handleFeedbackSubmit} disabled={(!rating && !feedback.trim()) || feedbackStatus === "submitting"} className="w-full py-4 bg-[#C8A97E] text-black font-mono text-[11px] tracking-widest uppercase font-bold hover:bg-white transition-colors rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-[0_0_15px_rgba(200,169,126,0.2)]">
-                    {feedbackStatus === "submitting" ? <Loader2 className="w-5 h-5 animate-spin" /> : "Submit Feedback"}
+                    {feedbackStatus === "submitting" ? <Loader2 className="w-5 h-5 animate-spin" /> : "Quick Feedback!"}
                   </button>
                 </div>
               )}
@@ -898,7 +942,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
   const [openLikePopupId, setOpenLikePopupId] = useState(null);
   const [openCommentPopupId, setOpenCommentPopupId] = useState(null); 
   const [commentText, setCommentText] = useState(""); 
-  const [replyingTo, setReplyingTo] = useState(null); // 🔴 NEW: Track who we are replying to { commentId, name }
+  const [replyingTo, setReplyingTo] = useState(null); 
 
   useEffect(() => {
     const handleClickOutside = () => {
@@ -1001,7 +1045,6 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     }
   };
 
-  // Function to add a main comment
   const handleAddComment = async (story) => {
     if (!auth.currentUser || !commentText.trim()) return;
 
@@ -1012,7 +1055,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
       photoURL: profile?.photoURL || null,
       text: commentText.trim(),
       likes: [], 
-      replies: [], // 🔴 NEW: Empty array for nested replies
+      replies: [], 
       createdAt: new Date().toISOString()
     };
 
@@ -1034,7 +1077,6 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     }
   };
 
-  // 🔴 NEW: Function to add a reply to a comment
   const handleAddReply = async (story, parentCommentId) => {
     if (!auth.currentUser || !commentText.trim()) return;
 
@@ -1047,7 +1089,6 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
       createdAt: new Date().toISOString()
     };
 
-    // Map through existing comments to inject the reply inside the parent comment
     const updatedComments = (story.comments || []).map(comment => {
       if (comment.id === parentCommentId) {
         return {
@@ -1065,7 +1106,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     try {
       await updateDoc(doc(db, "stories", story.id), { comments: updatedComments });
       setCommentText("");
-      setReplyingTo(null); // Reset reply state
+      setReplyingTo(null); 
     } catch (error) {
       console.error("Error adding reply:", error);
     }
@@ -1265,7 +1306,7 @@ Write freely.....!!
                                 e.stopPropagation(); 
                                 setOpenLikePopupId(null);
                                 setOpenCommentPopupId(openCommentPopupId === t.id ? null : t.id); 
-                                setReplyingTo(null); // Clear reply state when reopen
+                                setReplyingTo(null); 
                               }}
                               className="cursor-pointer group outline-none flex items-center justify-center"
                             >
@@ -1391,7 +1432,7 @@ Write freely.....!!
                                           </div>
                                           <span className="font-serif text-[#A09A95] text-[13px] leading-snug mt-0.5 break-words">{comment.text}</span>
                                           
-                                          {/* COMMENT INTERACTIONS (Like & Reply Buttons) */}
+                                          {/* COMMENT INTERACTIONS */}
                                           <div className="flex items-center gap-4 mt-2">
                                             <button 
                                               onClick={(e) => { e.stopPropagation(); toggleCommentLike(t, comment.id); }}
@@ -1401,7 +1442,6 @@ Write freely.....!!
                                               <span className="font-mono text-[9px] font-bold">{comment.likes?.length || ''}</span>
                                             </button>
                                             
-                                            {/* 🔴 NEW: REPLY BUTTON */}
                                             {allowsComments && (
                                               <button 
                                                 onClick={() => setReplyingTo({ commentId: comment.id, name: comment.name })}
@@ -1414,7 +1454,7 @@ Write freely.....!!
                                         </div>
                                       </div>
 
-                                      {/* 🔴 NEW: RENDER NESTED REPLIES INSIDE THE THREAD */}
+                                      {/* REPLIES */}
                                       {comment.replies && comment.replies.map((reply) => (
                                         <div key={reply.id} className="flex items-start gap-2 bg-white/[0.01] p-2 rounded-lg ml-6 border-l border-[#C8A97E]/20 mt-1 pl-3">
                                           {reply.photoURL ? (
@@ -1438,7 +1478,6 @@ Write freely.....!!
 
                               {allowsComments ? (
                                 <div className="border-t border-white/5 bg-[#141419]/50 rounded-b-xl p-3 flex flex-col gap-2">
-                                  {/* 🔴 NEW: Replying notification band with dismiss option */}
                                   {replyingTo && (
                                     <div className="flex justify-between items-center bg-[#C8A97E]/10 border border-[#C8A97E]/20 px-2 py-1 rounded-md">
                                       <span className="font-mono text-[9px] text-[#C8A97E] uppercase tracking-wider">Replying to {replyingTo.name}...</span>
@@ -1594,40 +1633,32 @@ const handleSave = async () => {
     if (!newEntry.trim() || !auth.currentUser) return;
     setIsSaving(true);
     
-    let moodEmoji = "📝"; // Default fallback emoji
+    let moodEmoji = "📝"; 
     
-    // ─────────────────────────────────────────
-    // 🔥 STEP 1: BACKEND SE EMOJI MANGAO 🔥
-    // ─────────────────────────────────────────
     try {
       const response = await fetch("https://dapan-api-secure.onrender.com/api/generate-emoji", {
-  method: "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ diaryEntry: newEntry }) 
       });
 
-      // Check if response is successful before parsing
       if (response.ok) {
         const data = await response.json();
         if (data.emoji) {
           moodEmoji = data.emoji;
-          console.log("✅ Emoji found successfully from backend:", moodEmoji);
+          console.log("Emoji found successfully from backend:", moodEmoji);
         }
       } else {
-        console.warn("⚠️ Backend returned status:", response.status);
+        console.warn("Backend returned status:", response.status);
       }
     } catch (apiError) {
-      console.error("🚨 BACKEND FETCH ERROR:", apiError);
+      console.error("BACKEND FETCH ERROR:", apiError);
     }
 
-    // ─────────────────────────────────────────
-    // 🔥 STEP 2: FIRESTORE MEIN SAVE KARO 🔥
-    // ─────────────────────────────────────────
     try {
       const now = new Date();
       const timeString = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
       
-      // 🔴 DATE FIX: Wapas purana lamba format laga diya taaki UI aur Calendar theek se kaam karein
       const todayFormatted = now.toLocaleDateString('en-IN', { 
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
       });
@@ -1644,13 +1675,12 @@ const handleSave = async () => {
   
       await addDoc(collection(db, "diaries"), entryData);
       
-      // Weekly Aaina ko update karne ke liye event trigger kiya
       window.dispatchEvent(new Event("diaryUpdated"));
       
-      setNewEntry(""); // Textarea clear kar diya
+      setNewEntry(""); 
       
     } catch (dbError) {
-      console.error("🚨 FIRESTORE SAVE ERROR:", dbError);
+      console.error("FIRESTORE SAVE ERROR:", dbError);
     } finally {
       setIsSaving(false);
     }
@@ -1770,14 +1800,13 @@ const ProfilePage = ({ profile, setProfile }) => {
   const [collegeInput, setCollegeInput] = useState(profile.college || "");
   const [branchInput, setBranchInput] = useState(profile.branch || "");
   const [isSaved, setIsSaved] = useState(false);
-  const [isSaving, setIsSaving] = useState(false); // Added saving state
+  const [isSaving, setIsSaving] = useState(false); 
   
   const [adminNotice, setAdminNotice] = useState("");
   const [isAdminPublishing, setIsAdminPublishing] = useState(false);
 
   const isWebsiteOwner = profile.email === "dhidna9090@gmail.com"; 
 
-  // 🔥 NEW: Fetch saved data from Firestore when page loads
   useEffect(() => {
     const fetchProfileData = async () => {
       if (auth.currentUser) {
@@ -1791,7 +1820,6 @@ const ProfilePage = ({ profile, setProfile }) => {
             if (userData.college) setCollegeInput(userData.college);
             if (userData.branch) setBranchInput(userData.branch);
 
-            // Keep global profile state in sync
             setProfile(prev => ({
               ...prev,
               name: userData.name || prev.name,
@@ -1807,7 +1835,6 @@ const ProfilePage = ({ profile, setProfile }) => {
     fetchProfileData();
   }, [setProfile]);
 
-  // 🔥 NEW: Actually save the data to Firestore so it survives refresh
   const handleSave = async (e) => {
     e.preventDefault();
     if (!auth.currentUser) return;
@@ -1816,7 +1843,6 @@ const ProfilePage = ({ profile, setProfile }) => {
     try {
       const userDocRef = doc(db, "users", auth.currentUser.uid);
       
-      // Save to database
       await setDoc(userDocRef, {
         name: nameInput,
         college: collegeInput,
@@ -1824,7 +1850,6 @@ const ProfilePage = ({ profile, setProfile }) => {
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      // Update local state
       setProfile(prev => ({
         ...prev,
         name: nameInput,
@@ -1960,6 +1985,7 @@ const ProfilePage = ({ profile, setProfile }) => {
     </div>
   );
 };
+
 // --- PRIMARY APP ORCHESTRATION ---
 export default function App() {
   const [currentPage, setCurrentPage] = useState("login"); 
@@ -1996,13 +2022,12 @@ export default function App() {
       parts: [{ text: "Namaste! I am Sathi. I am here to listen, whether you want to talk about exams, stress, or just your day. You can type or use the microphone to speak to me in English, Hindi, or Hinglish. How are you feeling right now?" }]
     }
   ]);
-  // 📍 NAYA NOTIFICATION FUNCTION YAHAN AAYEGA 📍
+
   const requestNotificationPermission = async (user) => {
     try {
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
         
-        // ⚠️ NICHE APNI VAPID KEY DAALNA MAT BHOOLNA ⚠️
         const currentToken = await getToken(messaging, { 
           vapidKey: "BDBEe-7SAS90LwTMU_UoA0aafej2PRiFJfbclGssYNWM0uoajoi2h1TPK_gQdOoh9s7o3fwl-sZs6F2NbR7OG5Q" 
         });
@@ -2010,13 +2035,11 @@ export default function App() {
         if (currentToken) {
           console.log("FCM Token Generated:", currentToken);
           
-          // Token ko Firestore mein save karna
          await setDoc(doc(db, "users", user.uid), {
-  fcmToken: currentToken,
-  name: user.displayName || "Darpan Student",
-  email: user.email
-}, { merge: true }); 
-// {merge: true} ka matlab hai ki purana data delete mat karna, bas naya add kar 
+            fcmToken: currentToken,
+            name: user.displayName || "Darpan Student",
+            email: user.email
+          }, { merge: true }); 
         }
       }
     } catch (error) {
@@ -2031,7 +2054,6 @@ export default function App() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // --- DATA FETCHING FUNCTIONS ---
   const fetchUserDiaries = async () => {
     if (!auth.currentUser) return;
     try {
@@ -2063,6 +2085,7 @@ export default function App() {
        console.error("Failed to fetch user chats:", error); 
      }
   };
+
   const fetchPublicStories = async () => {
     try {
       const q = query(collection(db, "stories"), orderBy("createdAt", "desc"));
@@ -2115,6 +2138,7 @@ export default function App() {
       default: return <HomePage setPage={setCurrentPage} announcement={announcement} />;
     }
   };
+
   return (
     <div className={`min-h-screen bg-[#06060A] text-[#E8E4DC] overflow-x-hidden selection:bg-[#C8A97E] selection:text-black ${!isMobile ? "custom-cursor-active" : ""}`}>
       <style dangerouslySetInnerHTML={{__html: `

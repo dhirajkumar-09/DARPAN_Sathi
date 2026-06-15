@@ -16,12 +16,6 @@ import {
   collection, addDoc, getDocs, query, where, orderBy, serverTimestamp , deleteDoc, doc , updateDoc ,arrayUnion, arrayRemove, onSnapshot, limit, setDoc ,getDoc
 } from 'firebase/firestore';
 import { getToken } from 'firebase/messaging';
-// --- API CONSTANTS ---
-// ⚠️ DHYAN DEIN: Is API key ko production mein process.env.REACT_APP_GEMINI_API_KEY se replace karna best practice hai
-// const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-const SATHI_SYSTEM_INSTRUCTION = {
-  parts: [{ text: "You are Sathi, a warm, empathetic AI companion for Indian students. You MUST respond primarily in conversational English and Hinglish (e.g., 'Main theek hoon, tell me about your day'). STRICTLY AVOID writing in pure Devanagari Hindi script (like 'नमस्ते') unless the user explicitly types in Devanagari first. Keep responses concise (2-4 sentences) and highly supportive." }]
-};
 
 // --- Data Constants ---
 const NAV_LINKS = [
@@ -665,6 +659,47 @@ const HomePage = ({ setPage, announcement }) => {
   const [feedbackStatus, setFeedbackStatus] = useState("idle");
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
 
+  // 🔥 NEW STATE FOR HOMEPAGE MINI-CHAT 🔥
+  const [miniChatHistory, setMiniChatHistory] = useState([
+    { from: "sathi", text: "Hey — how was today? Feel free to speak freely." }
+  ]);
+  const [miniChatInput, setMiniChatInput] = useState("");
+  const [isMiniChatLoading, setIsMiniChatLoading] = useState(false);
+
+  const handleMiniChatSend = async () => {
+    if (!miniChatInput.trim() || isMiniChatLoading) return;
+    
+    const newMessages = [...miniChatHistory, { from: "user", text: miniChatInput }];
+    setMiniChatHistory(newMessages);
+    setMiniChatInput(""); 
+    setIsMiniChatLoading(true);
+
+    try {
+      const geminiFormatMessages = newMessages.map((msg) => ({
+        role: msg.from === "sathi" ? "model" : "user",
+        parts: [{ text: msg.text }]
+      }));
+
+      const response = await fetch("https://dapan-api-secure.onrender.com/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: geminiFormatMessages })
+      });
+
+      const data = await response.json();
+
+      if (data && data.candidates && data.candidates[0].content) {
+        const sathiReply = data.candidates[0].content.parts[0].text;
+        setMiniChatHistory((prev) => [...prev, { from: "sathi", text: sathiReply }]);
+      }
+    } catch (error) {
+      console.error("Mini Chat Error:", error);
+      setMiniChatHistory((prev) => [...prev, { from: "sathi", text: "Sathi network se connect nahi ho paa raha hai. Thodi der baad try karo." }]);
+    } finally {
+      setIsMiniChatLoading(false);
+    }
+  };
+
   const handleFeedbackSubmit = async () => {
     if (!rating && !feedback.trim()) return;
     setFeedbackStatus("submitting");
@@ -755,7 +790,7 @@ const HomePage = ({ setPage, announcement }) => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <button onClick={() => setPage("chat")} className="cursor-pointer px-8 py-4 bg-[#C8A97E] text-black font-mono text-xs tracking-widest uppercase font-medium hover:bg-white transition-colors flex items-center justify-center gap-2 group shadow-[0_0_40px_rgba(200,169,126,0.3)] rounded-lg">
-                <Volume2 className="w-4 h-4" /> Talk to Sathi <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <Volume2 className="w-4 h-4" /> Full Chat Mode <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
           </div>
@@ -768,28 +803,50 @@ const HomePage = ({ setPage, announcement }) => {
                   <div className="font-serif text-lg font-semibold tracking-wide flex items-center gap-2">Sathi <Volume2 className="w-4 h-4 text-[#C8A97E] opacity-70" /></div>
                   <div className="flex items-center gap-2 mt-0.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#A8C87E] animate-pulse" />
-                    <span className="font-mono text-[9px] tracking-widest text-[#8A8580] uppercase">Online · Voice Ready</span>
+                    <span className="font-mono text-[9px] tracking-widest text-[#8A8580] uppercase">Online · Test Sathi Here</span>
                   </div>
                 </div>
               </div>
-              <div className="space-y-4">
-                {[
-                  { from: "sathi", text: "Hey — how was today? Feel free to speak freely.", delay: 0 },
-                  { from: "user", text: "(Voice Message) Honestly? Just exhausted. Don't even know why.", delay: 500 },
-                  { from: "sathi", text: "That 'don't even know why' is actually really important. I am listening—when did it start feeling this way?", delay: 1500 }
-                ].map((msg, i) => (
-                  <div key={i} className={`flex ${msg.from === "user" ? "justify-end" : "justify-start"}`} style={{ animation: `fadeIn 0.6s ease ${msg.delay}ms both` }}>
+              
+              {/* 🔥 LIVE MINI CHAT MAPPED HERE 🔥 */}
+              <div className="space-y-4 max-h-[250px] overflow-y-auto custom-scrollbar pr-2 pb-10">
+                {miniChatHistory.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.from === "user" ? "justify-end" : "justify-start"}`} style={{ animation: `fadeIn 0.4s ease both` }}>
                     <div className={`max-w-[85%] p-4 text-[14px] md:text-[15px] font-serif leading-relaxed flex items-start gap-2 ${msg.from === "user" ? "bg-[#C8A97E]/10 border border-[#C8A97E]/30 rounded-2xl rounded-tr-sm text-[#E8E4DC]" : "bg-white/5 border border-white/10 rounded-2xl rounded-tl-sm text-[#C4C0BB]"}`}>
                       {msg.text.includes("(Voice Message)") ? <Mic className="w-4 h-4 mt-0.5 text-[#C8A97E] shrink-0" /> : null}
                       <span>{msg.text.replace("(Voice Message) ", "")}</span>
                     </div>
                   </div>
                 ))}
+                
+                {isMiniChatLoading && (
+                  <div className="flex justify-start animate-fade-in">
+                    <div className="bg-white/5 border border-white/10 rounded-2xl rounded-tl-sm text-[#C4C0BB] p-4 text-[14px] flex gap-2 items-center">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#C8A97E]/40 animate-pulse" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#C8A97E]/40 animate-pulse delay-150" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#C8A97E]/40 animate-pulse delay-300" />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="absolute -bottom-6 md:-bottom-8 right-4 md:right-8 bg-[#06060A] border border-[#C8A97E]/40 rounded-full py-2 px-5 font-mono text-[10px] md:text-xs text-[#C8A97E] shadow-xl backdrop-blur-md z-20">
-              {displayText}<span className="animate-pulse">|</span>
+            
+            {/* 🔥 AESTHETIC INPUT BOX INCORPORATED 🔥 */}
+            <div className="absolute -bottom-6 md:-bottom-8 right-4 md:right-8 bg-[#06060A] border border-[#C8A97E]/40 rounded-full py-2 px-5 shadow-xl backdrop-blur-md z-20 w-[85%] md:w-[350px] flex items-center justify-between">
+              <input 
+                type="text" 
+                value={miniChatInput}
+                onChange={(e) => setMiniChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleMiniChatSend()}
+                placeholder={`${displayText}|`}
+                className="bg-transparent border-none outline-none text-[#E8E4DC] placeholder:text-[#C8A97E] font-mono text-[10px] md:text-xs w-full pr-2"
+                disabled={isMiniChatLoading}
+              />
+              <button onClick={handleMiniChatSend} disabled={isMiniChatLoading || !miniChatInput.trim()} className="text-[#C8A97E] hover:text-white transition-colors cursor-pointer disabled:opacity-50">
+                <Send className="w-4 h-4" />
+              </button>
             </div>
+
           </div>
         </div>
 
@@ -1545,7 +1602,6 @@ const handleSave = async () => {
     try {
       const response = await fetch("https://dapan-api-secure.onrender.com/api/generate-emoji", {
   method: "POST",
-  // ... baaki code same rahega
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ diaryEntry: newEntry }) 
       });

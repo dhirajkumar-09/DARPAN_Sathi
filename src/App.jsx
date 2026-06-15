@@ -951,13 +951,35 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     window.addEventListener("click", handleClickOutside);
     return () => window.removeEventListener("click", handleClickOutside);
   }, []);
-
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newStory.trim() || !auth.currentUser) return;
     setIsSubmitting(true);
     
     try {
+      // --- 🛑 1. GATEKEEPER CHECK (Backend Validation) ---
+      // Replace with your actual deployed Render backend URL
+      const BACKEND_URL = "https://dapan-api-secure.onrender.com"; 
+      
+      const checkResponse = await fetch(`${BACKEND_URL}/api/save-story`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // Backend me humne req.body.storyText set kiya hai
+        body: JSON.stringify({ storyText: newStory })
+      });
+
+      const checkData = await checkResponse.json();
+
+      // Agar gaali mili (Backend sent 400 error)
+      if (!checkResponse.ok) {
+        alert(checkData.error || "Inappropriate words detected!"); // Screen par popup
+        setIsSubmitting(false);
+        return; // 🛑 YAHIN ROK DO, Firebase me save mat hone do!
+      }
+      // --- 🛑 GATEKEEPER CHECK END ---
+
+
+      // --- 2. FIREBASE SAVING (If story is 100% clean) ---
       const now = new Date();
       const timeString = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
       const dateString = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
@@ -976,7 +998,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
         displayTime: `${dateString}, ${timeString}`,
         likes: [],
         comments: [], 
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp() // Assuming you imported serverTimestamp
       };
       
       const docRef = await addDoc(collection(db, "stories"), storyData);
@@ -984,13 +1006,14 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
       setNewStory("");
       setIsPrivatePost(false);
       setAllowCommentsPost(true);
+
     } catch (error) { 
       console.error("Error saving story:", error); 
+      alert("Something went wrong while posting.");
     } finally { 
       setIsSubmitting(false); 
     }
   };
-
   const togglePrivacy = async (storyId, currentStatus) => {
     try {
       await updateDoc(doc(db, "stories", storyId), { isPrivate: !currentStatus });

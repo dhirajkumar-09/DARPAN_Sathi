@@ -525,10 +525,15 @@ const ChatPage = ({ messages, setMessages }) => {
         role: "model",
         parts: [{ text: "Namaste! I am Sathi. We've started a fresh session. How are you feeling right now?" }]
     }]);
-    if (audioSourceRef.current) {
-        audioSourceRef.current.stop();
-        setIsSpeaking(false);
+    
+    // 🔥 FIX: Stop synthesis on chat clear
+    if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
     }
+    if (audioSourceRef.current) {
+        try { audioSourceRef.current.stop(); } catch(e) {}
+    }
+    setIsSpeaking(false);
   };
 
   return (
@@ -557,9 +562,17 @@ const ChatPage = ({ messages, setMessages }) => {
           <div className="flex items-center gap-2">
             <button 
               onClick={() => {
-                  setIsAudioOutputEnabled(!isAudioOutputEnabled);
-                  if (isAudioOutputEnabled && audioSourceRef.current) {
-                      audioSourceRef.current.stop();
+                  const newState = !isAudioOutputEnabled;
+                  setIsAudioOutputEnabled(newState);
+                  
+                  // 🔥 THE FIX: Properly stop both browser speech and custom API audio
+                  if (!newState && window.speechSynthesis) {
+                      window.speechSynthesis.cancel();
+                  }
+                  if (!newState && audioSourceRef.current) {
+                      try { audioSourceRef.current.stop(); } catch(e) {}
+                  }
+                  if (!newState) {
                       setIsSpeaking(false);
                   }
               }}
@@ -655,7 +668,6 @@ const ChatPage = ({ messages, setMessages }) => {
     </div>
   );
 };
-
 const HomePage = ({ setPage, announcement }) => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -829,7 +841,7 @@ const HomePage = ({ setPage, announcement }) => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <button onClick={() => setPage("chat")} className="cursor-pointer px-8 py-4 bg-[#C8A97E] text-black font-mono text-xs tracking-widest uppercase font-medium hover:bg-white transition-colors flex items-center justify-center gap-2 group shadow-[0_0_40px_rgba(200,169,126,0.3)] rounded-lg">
-                <Volume2 className="w-4 h-4" /> Full Chat Mode <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <Volume2 className="w-4 h-4" /> Chat with SATHI<ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
           </div>
@@ -848,7 +860,7 @@ const HomePage = ({ setPage, announcement }) => {
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#A8C87E] animate-pulse" />
-                    <span className="font-mono text-[9px] tracking-widest text-[#8A8580] uppercase">Online · Test Sathi Here</span>
+                    <span className="font-mono text-[9px] tracking-widest text-[#8A8580] uppercase">Online</span>
                   </div>
                 </div>
               </div>
@@ -925,7 +937,7 @@ const HomePage = ({ setPage, announcement }) => {
                       <Star key={star} className={`w-8 h-8 cursor-pointer transition-all duration-200 ${(hoverRating || rating) >= star ? "fill-[#C8A97E] text-[#C8A97E] scale-110" : "text-[#5A5550] hover:text-[#C8A97E]/50"}`} onMouseEnter={() => setHoverRating(star)} onMouseLeave={() => setHoverRating(0)} onClick={() => setRating(star)} />
                     ))}
                   </div>
-                  <textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Tell us how Darpan makes you feel..." className="w-full bg-[#141419] border border-white/10 rounded-xl p-4 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-[16px] focus:outline-none focus:border-[#C8A97E]/50 transition-colors resize-none shadow-inner min-h-[120px] custom-scrollbar" />
+                  <textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Tell us how Darpan makes you feel...and share your suggestions to make it even better." className="w-full bg-[#141419] border border-white/10 rounded-xl p-4 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-[16px] focus:outline-none focus:border-[#C8A97E]/50 transition-colors resize-none shadow-inner min-h-[120px] custom-scrollbar" />
                   <button onClick={handleFeedbackSubmit} disabled={(!rating && !feedback.trim()) || feedbackStatus === "submitting"} className="w-full py-4 bg-[#C8A97E] text-black font-mono text-[11px] tracking-widest uppercase font-bold hover:bg-white transition-colors rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-[0_0_15px_rgba(200,169,126,0.2)]">
                     {feedbackStatus === "submitting" ? <Loader2 className="w-5 h-5 animate-spin" /> : "Quick Feedback!"}
                   </button>
@@ -2014,10 +2026,8 @@ const ProfilePage = ({ profile, setProfile }) => {
   );
 };
 
-// --- NEW LANDING PAGE ---
-// --- NEW LANDING PAGE ---
-// --- NEW LANDING PAGE ---
-// --- NEW SYMMETRICAL PREMIUM LANDING PAGE ---
+// --- NEW PREMIUM SYMMETRICAL LANDING PAGE (WITH INSIGHTS & SECURITY) ---
+// --- NEW PREMIUM SYMMETRICAL LANDING PAGE ---
 // --- NEW PREMIUM SYMMETRICAL LANDING PAGE ---
 const LandingPage = ({ setPage }) => {
   return (
@@ -2078,7 +2088,7 @@ const LandingPage = ({ setPage }) => {
 
           </div>
 
-          {/* ================= CENTER COLUMN (Hero Text) ================= */}
+          {/* ================= CENTER COLUMN (Hero Text & Insight Data) ================= */}
           <div className="w-full xl:w-[44%] flex flex-col items-center text-center px-4 order-1 xl:order-2">
             
             {/* Sparkle Badge */}
@@ -2103,16 +2113,28 @@ const LandingPage = ({ setPage }) => {
               </em>
             </h1>
             
-            {/* Subtext */}
+            {/* Main Description (Brought Back) */}
             <p 
-              className="font-serif text-lg md:text-xl text-[#A09A95] font-light leading-relaxed max-w-lg mx-auto mb-12 opacity-0 animate-fade-in"
+              className="font-serif text-lg md:text-xl text-[#A09A95] font-light leading-relaxed max-w-lg mx-auto mb-8 opacity-0 animate-fade-in"
               style={{ animationDelay: "400ms", animationFillMode: "forwards" }}
             >
               A sanctuary where your feelings can be expressed without hesitation. Track your mental well-being, share your untold stories, and speak to an AI companion who truly listens.
             </p>
 
-            {/* CTA Button */}
-            <div className="opacity-0 animate-fade-in" style={{ animationDelay: "500ms", animationFillMode: "forwards" }}>
+            {/* Sleek Loneliness Data (Not a bulky card) */}
+            <div 
+              className="w-full max-w-md mx-auto mb-10 opacity-0 animate-fade-in flex flex-col items-center" 
+              style={{ animationDelay: "500ms", animationFillMode: "forwards" }}
+            >
+              <div className="w-16 h-px bg-gradient-to-r from-transparent via-[#C8A97E]/50 to-transparent mb-5" />
+              <p className="font-serif text-[15px] md:text-base text-[#8A8580] leading-relaxed text-center px-4 italic">
+                India ranks as the <strong className="text-[#C8A97E] font-medium not-italic">second loneliest country</strong>, with <strong className="text-[#C8A97E] font-medium not-italic">~58% of the population</strong> experiencing loneliness. Darpan is here so you never have to feel alone.
+              </p>
+              <div className="w-16 h-px bg-gradient-to-r from-transparent via-[#C8A97E]/50 to-transparent mt-5" />
+            </div>
+
+            {/* CTA Button & Security Badge */}
+            <div className="flex flex-col items-center gap-6 opacity-0 animate-fade-in" style={{ animationDelay: "600ms", animationFillMode: "forwards" }}>
               <button 
                 onClick={() => setPage("login")} 
                 className="relative px-12 py-5 bg-gradient-to-r from-[#C8A97E] to-[#B3936B] text-black font-mono text-sm tracking-widest uppercase font-bold transition-all duration-500 flex items-center justify-center gap-3 group rounded-xl mx-auto cursor-pointer hover:scale-105 hover:shadow-[0_0_50px_rgba(200,169,126,0.4)] overflow-hidden"
@@ -2121,6 +2143,12 @@ const LandingPage = ({ setPage }) => {
                 <span className="relative z-10">Get Started!</span> 
                 <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1.5 transition-transform" />
               </button>
+              
+              {/* Security Assurance Badge */}
+              <div className="flex items-center gap-2 text-[#A8C87E] font-mono text-[10px] uppercase tracking-widest bg-[#A8C87E]/5 px-4 py-2 rounded-full border border-[#A8C87E]/20 shadow-inner">
+                <Shield className="w-3.5 h-3.5" />
+                <span>Your data is fully safe and secure</span>
+              </div>
             </div>
 
           </div>
@@ -2161,7 +2189,7 @@ const LandingPage = ({ setPage }) => {
         </div>
 
         {/* ================= BOTTOM PREMIUM QUOTE SECTION ================= */}
-        <div className="mt-32 mb-10 w-full max-w-4xl mx-auto flex flex-col items-center text-center opacity-0 animate-fade-in" style={{ animationDelay: "1200ms", animationFillMode: "forwards" }}>
+        <div className="mt-28 mb-8 w-full max-w-4xl mx-auto flex flex-col items-center text-center opacity-0 animate-fade-in" style={{ animationDelay: "1200ms", animationFillMode: "forwards" }}>
           
           {/* Elegant fading vertical line */}
           <div className="w-px h-32 bg-gradient-to-b from-transparent via-[#C8A97E]/50 to-transparent mb-12" />

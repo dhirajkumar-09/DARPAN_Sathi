@@ -179,23 +179,58 @@ const Navbar = ({ currentPage, setPage, isLoggedIn, setIsLoggedIn, profile }) =>
     </nav>
   );
 };
-
 const Footer = () => {
   const [modalContent, setModalContent] = useState(null);
+  const googleReportUrl = "https://transparencyreport.google.com/safe-browsing/search?url=https:%2F%2Fdarpan-sathi.vercel.app%2F";
+
   return (
     <>
-      <footer className="py-10 px-6 md:px-12 lg:px-20 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 bg-[#06060A]">
-        <div className="font-serif text-2xl font-bold tracking-[0.2em] text-[#E8E4DC]">
-          DARP<span className="text-[#C8A97E]/40">AN</span>
-        </div>
-        <div className="font-mono text-[9px] md:text-[10px] tracking-widest text-[#5A5550] uppercase text-center md:text-left">
-          Made with care for Indian Students · © {new Date().getFullYear()} Darpan
-        </div>
-        <div className="flex gap-8 font-mono text-[10px] tracking-widest text-[#8A8580] uppercase">
-          <button onClick={() => setModalContent('privacy')} className="hover:text-[#C8A97E] transition-colors cursor-pointer">Privacy</button>
+      <footer className="py-8 px-6 md:px-12 lg:px-20 border-t border-white/5 bg-[#06060A] relative z-20">
+        <div className="max-w-7xl mx-auto flex flex-col gap-6">
+          
+          {/* --- SLEEK INLINE TRUST BADGES --- */}
+          <div className="flex flex-wrap justify-center md:justify-center gap-6 md:gap-12 border-b border-white/5 pb-6">
+            <div className="flex items-center gap-2 text-[#8A8580]">
+              <Lock className="w-4 h-4 text-[#C8A97E]" />
+              <span className="font-mono text-[10px] uppercase tracking-widest">256-Bit SSL Secured</span>
+            </div>
+            
+            <a 
+              href={googleReportUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="flex items-center gap-2 text-[#8A8580] hover:text-[#A8C87E] transition-colors group cursor-pointer"
+              title="Verify Google Safety Report"
+            >
+              <Shield className="w-4 h-4 text-[#A8C87E] group-hover:scale-110 transition-transform" />
+              <span className="font-mono text-[10px] uppercase tracking-widest flex items-center gap-1">
+                Google Verified <span className="text-[8px] opacity-70">🔗</span>
+              </span>
+            </a>
+            
+            <div className="flex items-center gap-2 text-[#8A8580]">
+              <Check className="w-4 h-4 text-[#7EB8C8]" />
+              <span className="font-mono text-[10px] uppercase tracking-widest">100% Private Data</span>
+            </div>
+          </div>
+
+          {/* --- BOTTOM LEGAL ROW --- */}
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="font-serif text-xl font-bold tracking-[0.2em] text-[#E8E4DC]">
+              DARP<span className="text-[#C8A97E]/40">AN</span>
+            </div>
+            <div className="font-mono text-[9px] md:text-[10px] tracking-widest text-[#5A5550] uppercase text-center">
+              Made with care for Indian Students · © {new Date().getFullYear()} Darpan
+            </div>
+            <div className="flex gap-8 font-mono text-[10px] tracking-widest text-[#8A8580] uppercase">
+              <button onClick={() => setModalContent('privacy')} className="hover:text-[#C8A97E] transition-colors cursor-pointer font-bold">Privacy Policy</button>
+            </div>
+          </div>
+          
         </div>
       </footer>
 
+      {/* --- PRIVACY MODAL --- */}
       {modalContent && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-[#0A0A0F] border border-[#C8A97E]/20 rounded-2xl max-w-md w-full p-8 shadow-2xl relative" style={{ animation: "fadeIn 0.3s ease-out" }}>
@@ -204,31 +239,23 @@ const Footer = () => {
             </button>
             <h3 className="font-serif text-2xl text-[#E8E4DC] mb-4">Privacy Policy</h3>
             <div className="font-serif text-[#A09A95] leading-relaxed text-sm overflow-y-auto max-h-[50vh] pr-4 space-y-4 custom-scrollbar">
-              <p className="italic text-xs border-b border-[#C8A97E]/20 pb-2">
-                Effective Date: June, 2026
-              </p>
-
+              <p className="italic text-xs border-b border-[#C8A97E]/20 pb-2">Effective Date: June, 2026</p>
               <div>
                 <h4 className="text-[#C8A97E] font-mono uppercase tracking-wider text-xs mb-1">1. Information We Collect</h4>
                 <p><strong className="text-[#E8E4DC]">Profile & Content:</strong> Your name, email, Midnight Diary entries, Mood Canvas emojis, and private chats with Sathi.</p>
               </div>
-
               <div>
                 <h4 className="text-[#C8A97E] font-mono uppercase tracking-wider text-xs mb-1">2. How We Use Your Data</h4>
                 <p>We use your data strictly to power Darpan's core features. <strong className="text-red-400">We do not and will never sell your personal data.</strong></p>
               </div>
-
               <div>
                 <h4 className="text-[#C8A97E] font-mono uppercase tracking-wider text-xs mb-1">3. Enterprise-Level Security</h4>
                 <p><strong className="text-[#E8E4DC]">100% Private:</strong> Your diaries, chats, and private stories are locked cryptographically via Firebase Row-Level Security. No other user can read them.</p>
-                <p className="mt-1"><strong className="text-[#E8E4DC]">Public Stories:</strong> Only stories you explicitly publish can be viewed by others.</p>
               </div>
-
               <div>
-                <h4 className="text-[#C8A97E] font-mono uppercase tracking-wider text-xs mb-1">4. Your Rights & Contact</h4>
-                <p>You have full control to read, edit, or delete your data at any time. For questions, contact the developer:</p>
+                <h4 className="text-[#C8A97E] font-mono uppercase tracking-wider text-xs mb-1">4. Contact</h4>
+                <p>For questions, contact the developer:</p>
               </div>
-              
               <div className="bg-[#C8A97E]/5 p-3 rounded-lg border border-[#C8A97E]/30 mt-2">
                 <div className="text-[#E8E4DC] text-xs"><strong>Developer:</strong> Dhiraj</div>
                 <div className="text-[#E8E4DC] text-xs mt-1"><strong>Email:</strong> darpansathi01@gmail.com</div>
@@ -240,7 +267,6 @@ const Footer = () => {
     </>
   );
 };
-
 const AuthPage = ({ setPage, setIsLoggedIn }) => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -2026,9 +2052,6 @@ const ProfilePage = ({ profile, setProfile }) => {
   );
 };
 
-// --- NEW PREMIUM SYMMETRICAL LANDING PAGE (WITH INSIGHTS & SECURITY) ---
-// --- NEW PREMIUM SYMMETRICAL LANDING PAGE ---
-// --- NEW PREMIUM SYMMETRICAL LANDING PAGE ---
 const LandingPage = ({ setPage }) => {
   return (
     <div className="min-h-screen bg-[#06060A] flex flex-col relative overflow-hidden">
@@ -2113,7 +2136,7 @@ const LandingPage = ({ setPage }) => {
               </em>
             </h1>
             
-            {/* Main Description (Brought Back) */}
+            {/* Main Description */}
             <p 
               className="font-serif text-lg md:text-xl text-[#A09A95] font-light leading-relaxed max-w-lg mx-auto mb-8 opacity-0 animate-fade-in"
               style={{ animationDelay: "400ms", animationFillMode: "forwards" }}
@@ -2121,7 +2144,7 @@ const LandingPage = ({ setPage }) => {
               A sanctuary where your feelings can be expressed without hesitation. Track your mental well-being, share your untold stories, and speak to an AI companion who truly listens.
             </p>
 
-            {/* Sleek Loneliness Data (Not a bulky card) */}
+            {/* Sleek Loneliness Data */}
             <div 
               className="w-full max-w-md mx-auto mb-10 opacity-0 animate-fade-in flex flex-col items-center" 
               style={{ animationDelay: "500ms", animationFillMode: "forwards" }}
@@ -2134,7 +2157,7 @@ const LandingPage = ({ setPage }) => {
             </div>
 
             {/* CTA Button & Security Badge */}
-            <div className="flex flex-col items-center gap-6 opacity-0 animate-fade-in" style={{ animationDelay: "600ms", animationFillMode: "forwards" }}>
+            <div className="flex flex-col items-center gap-4 opacity-0 animate-fade-in" style={{ animationDelay: "600ms", animationFillMode: "forwards" }}>
               <button 
                 onClick={() => setPage("login")} 
                 className="relative px-12 py-5 bg-gradient-to-r from-[#C8A97E] to-[#B3936B] text-black font-mono text-sm tracking-widest uppercase font-bold transition-all duration-500 flex items-center justify-center gap-3 group rounded-xl mx-auto cursor-pointer hover:scale-105 hover:shadow-[0_0_50px_rgba(200,169,126,0.4)] overflow-hidden"
@@ -2144,10 +2167,26 @@ const LandingPage = ({ setPage }) => {
                 <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1.5 transition-transform" />
               </button>
               
-              {/* Security Assurance Badge */}
-              <div className="flex items-center gap-2 text-[#A8C87E] font-mono text-[10px] uppercase tracking-widest bg-[#A8C87E]/5 px-4 py-2 rounded-full border border-[#A8C87E]/20 shadow-inner">
-                <Shield className="w-3.5 h-3.5" />
-                <span>Your data is fully safe and secure</span>
+              {/* Ultra-Minimal Security Badges for Landing Page */}
+              <div className="flex flex-wrap justify-center items-center gap-4 md:gap-6 mt-4">
+                <div className="flex items-center gap-1.5 text-[#5A5550]">
+                  <Lock className="w-3.5 h-3.5 text-[#C8A97E]/70" />
+                  <span className="font-mono text-[9px] uppercase tracking-widest">SSL Encrypted</span>
+                </div>
+                <a 
+                  href="https://transparencyreport.google.com/safe-browsing/search?url=https:%2F%2Fdarpan-sathi.vercel.app%2F" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex items-center gap-1.5 text-[#5A5550] hover:text-[#A8C87E] transition-colors cursor-pointer group"
+                  title="Verify Google Safety Report"
+                >
+                  <Shield className="w-3.5 h-3.5 text-[#A8C87E]/70 group-hover:text-[#A8C87E]" />
+                  <span className="font-mono text-[9px] uppercase tracking-widest">Google Safe <span className="opacity-60">🔗</span></span>
+                </a>
+                <div className="flex items-center gap-1.5 text-[#5A5550]">
+                  <Check className="w-3.5 h-3.5 text-[#7EB8C8]/70" />
+                  <span className="font-mono text-[9px] uppercase tracking-widest">100% Private</span>
+                </div>
               </div>
             </div>
 

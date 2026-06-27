@@ -82,32 +82,6 @@ const CustomCursor = ({ isMobile }) => {
         }
       }
     };
-    // const [realtimeNotifications, setRealtimeNotifications] = useState([]);
-
-useEffect(() => {
-  if (!auth.currentUser) return;
-
-  // Sirf current user ki notifications fetch karega jo nayi hain
-  const q = query(
-    collection(db, "notifications"),
-    where("userId", "==", auth.currentUser.uid),
-    orderBy("createdAt", "desc"),
-    limit(10)
-  );
-
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const loadedNotifs = [];
-    snapshot.forEach((doc) => {
-      loadedNotifs.push({ id: doc.id, ...doc.data() });
-    });
-    setRealtimeNotifications(loadedNotifs);
-  }, (error) => {
-    console.error("Error listening to notifications:", error);
-  });
-
-  return () => unsubscribe();
-}, [isLoggedIn, currentPage]); // Jab login ho ya page badle, tab refresh ho
-
     const handleMouseOver = (e) => {
       if (e.target && (e.target.closest('button') || e.target.closest('a') || (e.target.classList && e.target.classList.contains('cursor-pointer')) || e.target.closest('.cursor-pointer'))) {
         isHovering = true;

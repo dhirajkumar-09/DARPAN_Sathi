@@ -2369,26 +2369,32 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [announcement, setAnnouncement] = useState("");
 const [realtimeNotifications, setRealtimeNotifications] = useState([]);
-  useEffect(() => {
+useEffect(() => {
   if (!isLoggedIn || !auth.currentUser) {
     setRealtimeNotifications([]);
     return;
   }
-    const q = query(collection(db, "announcements"), orderBy("createdAt", "desc"), limit(1));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        setAnnouncement(snapshot.docs[0].data().text);
-      } else {
-        setAnnouncement("");
-      }
-    }, (error) => {
-      console.error("Error listening to announcements:", error);
-    });
 
-    return () => unsubscribe();
-  }, []);
-  
+  const q = query(
+    collection(db, "notifications"),
+    where("userId", "==", auth.currentUser.uid),
+    orderBy("createdAt", "desc"),
+    limit(10)
+  );
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const loadedNotifs = [];
+    snapshot.forEach((doc) => {
+      loadedNotifs.push({ id: doc.id, ...doc.data() });
+    });
+    console.log("🔔 Notifications fetched:", loadedNotifs);
+    setRealtimeNotifications(loadedNotifs);
+  }, (error) => {
+    console.error("❌ Error listening to notifications:", error);
+  });
+
+  return () => unsubscribe();
+}, [isLoggedIn]);
   const [userStories, setUserStories] = useState([]);
   const [diaryEntries, setDiaryEntries] = useState([]);
   

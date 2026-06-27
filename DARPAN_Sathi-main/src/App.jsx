@@ -82,6 +82,31 @@ const CustomCursor = ({ isMobile }) => {
         }
       }
     };
+    // const [realtimeNotifications, setRealtimeNotifications] = useState([]);
+
+useEffect(() => {
+  if (!auth.currentUser) return;
+
+  // Sirf current user ki notifications fetch karega jo nayi hain
+  const q = query(
+    collection(db, "notifications"),
+    where("userId", "==", auth.currentUser.uid),
+    orderBy("createdAt", "desc"),
+    limit(10)
+  );
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const loadedNotifs = [];
+    snapshot.forEach((doc) => {
+      loadedNotifs.push({ id: doc.id, ...doc.data() });
+    });
+    setRealtimeNotifications(loadedNotifs);
+  }, (error) => {
+    console.error("Error listening to notifications:", error);
+  });
+
+  return () => unsubscribe();
+}, [isLoggedIn, currentPage]); // Jab login ho ya page badle, tab refresh ho
 
     const handleMouseOver = (e) => {
       if (e.target && (e.target.closest('button') || e.target.closest('a') || (e.target.classList && e.target.classList.contains('cursor-pointer')) || e.target.closest('.cursor-pointer'))) {
@@ -115,7 +140,7 @@ const CustomCursor = ({ isMobile }) => {
   );
 };
 
-const Navbar = ({ currentPage, setPage, isLoggedIn, setIsLoggedIn, profile }) => {
+const Navbar = ({ currentPage, setPage, isLoggedIn, setIsLoggedIn, profile,notifications = [] }) => {
   const [scrollY, setScrollY] = useState(0);
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -171,7 +196,8 @@ const Navbar = ({ currentPage, setPage, isLoggedIn, setIsLoggedIn, profile }) =>
               </button>
 
               {/* 🔥 YAHAN LAGA HAI BELL ICON 🔥 */}
-              <NotificationBell />
+            {/* 🔥 YAHAN PROP PASS KARO 🔥 */}
+            <NotificationBell notifications={notifications} />
               
             </div>
           </>
@@ -1144,6 +1170,17 @@ const handleSubmit = async (e) => {
           ? { ...s, comments: [...(s.comments || []), newComment] } 
           : s
       ));
+
+      // Agar comment karne wala khud post ka owner nahi hai, tabhi notification bhejo
+if (story.userId !== auth.currentUser.uid) {
+  await addDoc(collection(db, "notifications"), {
+    userId: story.userId, // Jiska post hai uski ID
+    senderName: profile?.name || "Student", // Jisne comment kiya
+    type: "like_comment",
+    isRead: false,
+    createdAt: serverTimestamp()
+  });
+}
       
       setCommentText(""); 
     } catch (error) {
@@ -2273,7 +2310,7 @@ export default function App() {
   const [isMobile, setIsMobile] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [announcement, setAnnouncement] = useState("");
-
+const [realtimeNotifications, setRealtimeNotifications] = useState([]);
   useEffect(() => {
     const q = query(collection(db, "announcements"), orderBy("createdAt", "desc"), limit(1));
     
@@ -2461,7 +2498,7 @@ export default function App() {
       `}} />
 
       <CustomCursor isMobile={isMobile} />
-      <Navbar currentPage={currentPage} setPage={setCurrentPage} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} profile={profile} />
+      <Navbar currentPage={currentPage} setPage={setCurrentPage} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} profile={profile} notifications={realtimeNotifications} />
       
       <main className="min-h-screen">
         {renderPage()}

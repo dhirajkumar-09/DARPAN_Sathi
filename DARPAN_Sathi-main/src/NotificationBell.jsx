@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Bell } from 'lucide-react';
-import NotificationCard from './NotificationCard'; 
+import NotificationCard from './NotificationCard.jsx'; 
 
-export default function NotificationBell() {
+// 🔥 Array hardcoded hatakar ab props se data le rha hai
+export default function NotificationBell({ notifications = [] }) {
   const [isOpen, setIsOpen] = useState(false);
   
-  // 🔥 YAHAN ARRAY KHALI (Empty) KAR DO
-  const notifications = []; 
+  // Jo notifications abhi tak padhi nahi gayi hain (Unread count)
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
     <div className="relative">
@@ -15,8 +16,8 @@ export default function NotificationBell() {
         className="relative p-2 text-gray-300 hover:text-white transition cursor-pointer"
       >
         <Bell size={24} />
-        {/* Agar notifications 0 hain, toh lal bindi bhi nahi dikhegi */}
-        {notifications.length > 0 && (
+        {/* Agar unread notification hain, tabhi laal bindi dikhegi */}
+        {unreadCount > 0 && (
           <span className="absolute top-1 right-1 h-2.5 w-2.5 bg-red-500 rounded-full border border-black"></span>
         )}
       </button>
@@ -27,7 +28,6 @@ export default function NotificationBell() {
             Notifications
           </h3>
           
-          {/* 🔥 AB YAHAN KUCH NAHI DIKHEGA, SIRF "No new notifications" AAYEGA */}
           {notifications.length > 0 ? (
             notifications.map((notif) => (
               <NotificationCard key={notif.id} notification={notif} />

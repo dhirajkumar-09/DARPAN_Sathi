@@ -993,7 +993,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
   const [openCommentPopupId, setOpenCommentPopupId] = useState(null); 
   const [commentText, setCommentText] = useState(""); 
   const [replyingTo, setReplyingTo] = useState(null); 
-
+  const [blockedUserIds, setBlockedUserIds] = useState([]);
   // 🔥 Tumhara Asli Backend URL
   const BACKEND_URL = "https://dapan-api-secure.onrender.com";
 
@@ -1002,7 +1002,23 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     window.addEventListener("click", handleClickOutside);
     return () => window.removeEventListener("click", handleClickOutside);
   }, []);
-
+   useEffect(() => {
+    const fetchBlockedUsers = async () => {
+      if (!auth.currentUser) return;
+      try {
+        const q = query(
+          collection(db, "blockedUsers"),
+          where("blockedBy", "==", auth.currentUser.uid)
+        );
+        const snapshot = await getDocs(q);
+        const ids = snapshot.docs.map(doc => doc.data().blockedUserId);
+        setBlockedUserIds(ids);
+      } catch (error) {
+        console.error("Error fetching blocked users:", error);
+      }
+    };
+    fetchBlockedUsers();
+  }, []);
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newStory.trim() || !auth.currentUser) return;
@@ -1049,7 +1065,15 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
       setNewStory("");
       setIsPrivatePost(false);
       setAllowCommentsPost(true);
-
+    if (!isPrivatePost) {
+        fetch(`${BACKEND_URL}/api/notifications/broadcast-story`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            senderName: profile?.name || "Student"
+          })
+        }).catch(err => console.error("Broadcast push failed:", err));
+      }
     } catch (error) { 
       console.error("Error saving story:", error); 
       alert("Something went wrong while posting.");
@@ -1086,7 +1110,21 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
       setUserStories(userStories.filter(s => s.id !== storyId));
     } catch (error) { console.error("Error deleting story:", error); }
   };
+   const handleBlockUser = async (targetUserId, targetUserName) => {
+    if (!auth.currentUser || targetUserId === auth.currentUser.uid) return;
+    if (!window.confirm(`Block ${targetUserName}'s posts? You won't see their stories anymore.`)) return;
 
+    try {
+      await addDoc(collection(db, "blockedUsers"), {
+        blockedBy: auth.currentUser.uid,
+        blockedUserId: targetUserId,
+        createdAt: serverTimestamp()
+      });
+      setBlockedUserIds(prev => [...prev, targetUserId]);
+    } catch (error) {
+      console.error("Error blocking user:", error);
+    }
+  };
   // ✅ PERFECTED: Direct Backend Call for Story Likes
   const toggleLike = async (story) => {
     if (!auth.currentUser) return;
@@ -1266,7 +1304,10 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     }
   };
 
-  const visibleStories = userStories.filter(t => !t.isPrivate || t.userId === auth.currentUser?.uid);
+  const visibleStories = userStories.filter(t => 
+    (!t.isPrivate || t.userId === auth.currentUser?.uid) &&
+    !blockedUserIds.includes(t.userId)
+  );
 
   return (
     <div className="animate-fade-in pt-32 pb-20 px-6 md:px-12 lg:px-20 min-h-screen">
@@ -1402,6 +1443,15 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </>
+                        )}
+                        {!isMyPost && (
+                          <button 
+                            onClick={() => handleBlockUser(t.userId, displayName)} 
+                            className="p-3 rounded-full bg-[#141419] border border-white/10 text-[#8A8580] hover:text-red-400 hover:border-red-400/50 transition-all cursor-pointer" 
+                            title="Block this user"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
                         )}
                       </div>
                     </div>

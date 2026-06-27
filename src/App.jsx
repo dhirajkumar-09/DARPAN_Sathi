@@ -1021,6 +1021,8 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
   const [commentText, setCommentText] = useState(""); 
   const [replyingTo, setReplyingTo] = useState(null); 
 
+  const BACKEND_URL = "https://dapan-api-secure.onrender.com";
+
   useEffect(() => {
     const handleClickOutside = () => {
       setOpenLikePopupId(null);
@@ -1028,35 +1030,49 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     window.addEventListener("click", handleClickOutside);
     return () => window.removeEventListener("click", handleClickOutside);
   }, []);
-const handleSubmit = async (e) => {
+
+  // 🔔 Helper — push notification (phone/system alert) bhejne ke liye
+  const sendPushNotification = async (recipientUserId, interactionType, snippet) => {
+    try {
+      const ownerDoc = await getDoc(doc(db, "users", recipientUserId));
+      const ownerToken = ownerDoc.data()?.fcmToken;
+      if (!ownerToken) return;
+
+      await fetch(`${BACKEND_URL}/api/notifications/interact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipientToken: ownerToken,
+          senderName: profile?.name || "Student",
+          interactionType,
+          snippet: snippet || ""
+        })
+      });
+    } catch (err) {
+      console.error("Push notification failed:", err);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newStory.trim() || !auth.currentUser) return;
     setIsSubmitting(true);
     
     try {
-      // --- 🛑 1. GATEKEEPER CHECK (Backend Validation) ---
-      // Replace with your actual deployed Render backend URL
-      const BACKEND_URL = "https://dapan-api-secure.onrender.com"; 
-      
       const checkResponse = await fetch(`${BACKEND_URL}/api/save-story`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Backend me humne req.body.storyText set kiya hai
         body: JSON.stringify({ storyText: newStory })
       });
 
       const checkData = await checkResponse.json();
 
-      // Agar gaali mili (Backend sent 400 error)
       if (!checkResponse.ok) {
-        alert(checkData.error || "Inappropriate words detected!"); // Screen par popup
+        alert(checkData.error || "Inappropriate words detected!");
         setIsSubmitting(false);
-        return; // 🛑 YAHIN ROK DO, Firebase me save mat hone do!
+        return;
       }
-      // --- 🛑 GATEKEEPER CHECK END ---
 
-
-      // --- 2. FIREBASE SAVING (If story is 100% clean) ---
       const now = new Date();
       const timeString = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
       const dateString = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
@@ -1075,7 +1091,7 @@ const handleSubmit = async (e) => {
         displayTime: `${dateString}, ${timeString}`,
         likes: [],
         comments: [], 
-        createdAt: serverTimestamp() // Assuming you imported serverTimestamp
+        createdAt: serverTimestamp()
       };
       
       const docRef = await addDoc(collection(db, "stories"), storyData);
@@ -1091,6 +1107,7 @@ const handleSubmit = async (e) => {
       setIsSubmitting(false); 
     }
   };
+
   const togglePrivacy = async (storyId, currentStatus) => {
     try {
       await updateDoc(doc(db, "stories", storyId), { isPrivate: !currentStatus });
@@ -1120,6 +1137,7 @@ const handleSubmit = async (e) => {
     } catch (error) { console.error("Error deleting story:", error); }
   };
 
+  // ✅ UPDATED — ab notification + push dono jaate hain, sirf LIKE pe, unlike pe nahi
   const toggleLike = async (story) => {
     if (!auth.currentUser) return;
     const uid = auth.currentUser.uid;
@@ -1131,173 +1149,197 @@ const handleSubmit = async (e) => {
     const hasLiked = currentLikes.some(like => typeof like === 'string' ? like === uid : like.uid === uid);
     
     let newLikes = [];
+    let isLiking = false;
+
     if (hasLiked) {
        newLikes = currentLikes.filter(like => typeof like === 'string' ? like !== uid : like.uid !== uid);
+       isLiking = false;
     } else {
        newLikes = [...currentLikes, { uid: uid, name: userName, photoURL: userPhoto, college: userCollege }];
+       isLiking = true;
     }
 
     try {
       await updateDoc(doc(db, "stories", story.id), { likes: newLikes });
       setUserStories(userStories.map(s => s.id === story.id ? { ...s, likes: newLikes } : s));
+
+      // Sirf LIKE pe notify, unlike pe kabhi nahi, khud ki story pe kabhi nahi
+      if (isLiking && story.userId !== uid) {
+        await addDoc(collection(db, "notifications"), {
+          userId: story.userId,
+          senderName: userName,
+          senderUid: uid,
+          type: "like",
+          storyId: story.id,
+          isRead: false,
+          createdAt: serverTimestamp()
+        });
+
+        await sendPushNotification(story.userId, "like_comment", "");
+      }
     } catch (error) { 
       console.error("Error toggling like:", error); 
     }
   };
 
- const handleAddComment = async (story) => {
-  if (!auth.currentUser || !commentText.trim()) return;
+  // ✅ UPDATED — push notification add hui
+  const handleAddComment = async (story) => {
+    if (!auth.currentUser || !commentText.trim()) return;
 
-  const newComment = {
-    id: Date.now().toString(), 
-    uid: auth.currentUser.uid,
-    name: profile?.name || "Student",
-    photoURL: profile?.photoURL || null,
-    text: commentText.trim(),
-    likes: [], 
-    replies: [], 
-    createdAt: new Date().toISOString()
+    const newComment = {
+      id: Date.now().toString(), 
+      uid: auth.currentUser.uid,
+      name: profile?.name || "Student",
+      photoURL: profile?.photoURL || null,
+      text: commentText.trim(),
+      likes: [], 
+      replies: [], 
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      const storyRef = doc(db, "stories", story.id);
+      await updateDoc(storyRef, {
+        comments: arrayUnion(newComment)
+      });
+      
+      setUserStories(userStories.map(s => 
+        s.id === story.id 
+          ? { ...s, comments: [...(s.comments || []), newComment] } 
+          : s
+      ));
+
+      if (story.userId !== auth.currentUser.uid) {
+        await addDoc(collection(db, "notifications"), {
+          userId: story.userId,
+          senderName: profile?.name || "Student",
+          senderUid: auth.currentUser.uid,
+          type: "comment",
+          storyId: story.id,
+          snippet: commentText.trim().slice(0, 60),
+          isRead: false,
+          createdAt: serverTimestamp()
+        });
+
+        await sendPushNotification(story.userId, "like_comment", commentText.trim());
+      }
+      
+      setCommentText(""); 
+    } catch (error) {
+      console.error("Error adding comment:", error);
+    }
   };
 
-  try {
-    const storyRef = doc(db, "stories", story.id);
-    await updateDoc(storyRef, {
-      comments: arrayUnion(newComment)
+  // ✅ UPDATED — push notification add hui
+  const handleAddReply = async (story, parentCommentId) => {
+    if (!auth.currentUser || !commentText.trim()) return;
+
+    const parentComment = (story.comments || []).find(c => c.id === parentCommentId);
+    const parentCommentOwnerId = parentComment?.uid;
+
+    const newReply = {
+      id: Date.now().toString(),
+      uid: auth.currentUser.uid,
+      name: profile?.name || "Student",
+      photoURL: profile?.photoURL || null,
+      text: commentText.trim(),
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedComments = (story.comments || []).map(comment => {
+      if (comment.id === parentCommentId) {
+        return {
+          ...comment,
+          replies: [...(comment.replies || []), newReply]
+        };
+      }
+      return comment;
     });
-    
+
     setUserStories(userStories.map(s => 
-      s.id === story.id 
-        ? { ...s, comments: [...(s.comments || []), newComment] } 
-        : s
+      s.id === story.id ? { ...s, comments: updatedComments } : s
     ));
 
-    // ✅ Notify STORY OWNER (skip if commenting on own story)
-    if (story.userId !== auth.currentUser.uid) {
-      await addDoc(collection(db, "notifications"), {
-        userId: story.userId,
-        senderName: profile?.name || "Student",
-        senderUid: auth.currentUser.uid,
-        type: "comment",
-        storyId: story.id,
-        snippet: commentText.trim().slice(0, 60),
-        isRead: false,
-        createdAt: serverTimestamp()
-      });
+    try {
+      await updateDoc(doc(db, "stories", story.id), { comments: updatedComments });
+
+      if (parentCommentOwnerId && parentCommentOwnerId !== auth.currentUser.uid) {
+        await addDoc(collection(db, "notifications"), {
+          userId: parentCommentOwnerId,
+          senderName: profile?.name || "Student",
+          senderUid: auth.currentUser.uid,
+          type: "reply",
+          storyId: story.id,
+          snippet: commentText.trim().slice(0, 60),
+          isRead: false,
+          createdAt: serverTimestamp()
+        });
+
+        await sendPushNotification(parentCommentOwnerId, "reply", commentText.trim());
+      }
+
+      setCommentText("");
+      setReplyingTo(null); 
+    } catch (error) {
+      console.error("Error adding reply:", error);
     }
-    
-    setCommentText(""); 
-  } catch (error) {
-    console.error("Error adding comment:", error);
-  }
-};
-const handleAddReply = async (story, parentCommentId) => {
-  if (!auth.currentUser || !commentText.trim()) return;
-
-  // Pehle parent comment dhundo taaki uska owner pata chale
-  const parentComment = (story.comments || []).find(c => c.id === parentCommentId);
-  const parentCommentOwnerId = parentComment?.uid;
-
-  const newReply = {
-    id: Date.now().toString(),
-    uid: auth.currentUser.uid,
-    name: profile?.name || "Student",
-    photoURL: profile?.photoURL || null,
-    text: commentText.trim(),
-    createdAt: new Date().toISOString()
   };
 
-  const updatedComments = (story.comments || []).map(comment => {
-    if (comment.id === parentCommentId) {
-      return {
-        ...comment,
-        replies: [...(comment.replies || []), newReply]
-      };
-    }
-    return comment;
-  });
+  // ✅ UPDATED — push notification add hui
+  const toggleCommentLike = async (story, commentId) => {
+    if (!auth.currentUser) return;
+    const uid = auth.currentUser.uid;
+    const userName = profile?.name || "Student";
 
-  setUserStories(userStories.map(s => 
-    s.id === story.id ? { ...s, comments: updatedComments } : s
-  ));
+    let isLiking = false;
+    let commentOwnerId = null;
 
-  try {
-    await updateDoc(doc(db, "stories", story.id), { comments: updatedComments });
-
-    // ✅ KEY LOGIC: notify the COMMENT OWNER, not the story owner
-    if (parentCommentOwnerId && parentCommentOwnerId !== auth.currentUser.uid) {
-      await addDoc(collection(db, "notifications"), {
-        userId: parentCommentOwnerId, // 👈 comment owner, not story.userId
-        senderName: profile?.name || "Student",
-        senderUid: auth.currentUser.uid,
-        type: "reply",
-        storyId: story.id,
-        snippet: commentText.trim().slice(0, 60),
-        isRead: false,
-        createdAt: serverTimestamp()
-      });
-    }
-
-    setCommentText("");
-    setReplyingTo(null); 
-  } catch (error) {
-    console.error("Error adding reply:", error);
-  }
-};
-
-const toggleCommentLike = async (story, commentId) => {
-  if (!auth.currentUser) return;
-  const uid = auth.currentUser.uid;
-  const userName = profile?.name || "Student";
-
-  let isLiking = false;
-  let commentOwnerId = null;
-
-  const updatedComments = (story.comments || []).map(comment => {
-    if (comment.id === commentId) {
-      commentOwnerId = comment.uid;
-      const currentLikes = comment.likes || [];
-      const hasLiked = currentLikes.includes(uid);
-      isLiking = !hasLiked; // true if we're adding a like
-
-      const newLikes = hasLiked 
-        ? currentLikes.filter(id => id !== uid) 
-        : [...currentLikes, uid]; 
-      
-      return { ...comment, likes: newLikes };
-    }
-    return comment;
-  });
-
-  setUserStories(userStories.map(s => 
-    s.id === story.id ? { ...s, comments: updatedComments } : s
-  ));
-
-  try {
-    await updateDoc(doc(db, "stories", story.id), { 
-      comments: updatedComments 
+    const updatedComments = (story.comments || []).map(comment => {
+      if (comment.id === commentId) {
+        commentOwnerId = comment.uid;
+        const currentLikes = comment.likes || [];
+        const hasLiked = currentLikes.includes(uid);
+        isLiking = !hasLiked;
+        
+        const newLikes = hasLiked 
+          ? currentLikes.filter(id => id !== uid) 
+          : [...currentLikes, uid]; 
+        
+        return { ...comment, likes: newLikes };
+      }
+      return comment;
     });
 
-    // ✅ Notify comment owner ONLY on like, never unlike, never own comment
-    if (isLiking && commentOwnerId && commentOwnerId !== uid) {
-      await addDoc(collection(db, "notifications"), {
-        userId: commentOwnerId,
-        senderName: userName,
-        senderUid: uid,
-        type: "comment_like",
-        storyId: story.id,
-        commentId: commentId,
-        isRead: false,
-        createdAt: serverTimestamp()
+    setUserStories(userStories.map(s => 
+      s.id === story.id ? { ...s, comments: updatedComments } : s
+    ));
+
+    try {
+      await updateDoc(doc(db, "stories", story.id), { 
+        comments: updatedComments 
       });
+
+      if (isLiking && commentOwnerId && commentOwnerId !== uid) {
+        await addDoc(collection(db, "notifications"), {
+          userId: commentOwnerId,
+          senderName: userName,
+          senderUid: uid,
+          type: "comment_like",
+          storyId: story.id,
+          commentId: commentId,
+          isRead: false,
+          createdAt: serverTimestamp()
+        });
+
+        await sendPushNotification(commentOwnerId, "like_comment", "");
+      }
+    } catch (error) {
+      console.error("Error toggling comment like:", error);
     }
-  } catch (error) {
-    console.error("Error toggling comment like:", error);
-  }
-};
+  };
 
   const visibleStories = userStories.filter(t => !t.isPrivate || t.userId === auth.currentUser?.uid);
-
-  return (
+return (
     <div className="animate-fade-in pt-32 pb-20 px-6 md:px-12 lg:px-20 min-h-screen">
       <div className="max-w-7xl mx-auto">
         <FadeInSection>

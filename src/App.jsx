@@ -2370,6 +2370,10 @@ export default function App() {
   const [announcement, setAnnouncement] = useState("");
 const [realtimeNotifications, setRealtimeNotifications] = useState([]);
   useEffect(() => {
+  if (!isLoggedIn || !auth.currentUser) {
+    setRealtimeNotifications([]);
+    return;
+  }
     const q = query(collection(db, "announcements"), orderBy("createdAt", "desc"), limit(1));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {

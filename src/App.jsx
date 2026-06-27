@@ -983,7 +983,6 @@ const HomePage = ({ setPage, announcement }) => {
     </div>
   );
 };
-
 const StoriesPage = ({ userStories, setUserStories, profile }) => {
   const [newStory, setNewStory] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -995,37 +994,14 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
   const [commentText, setCommentText] = useState(""); 
   const [replyingTo, setReplyingTo] = useState(null); 
 
+  // 🔥 Tumhara Asli Backend URL
   const BACKEND_URL = "https://dapan-api-secure.onrender.com";
 
   useEffect(() => {
-    const handleClickOutside = () => {
-      setOpenLikePopupId(null);
-    };
+    const handleClickOutside = () => setOpenLikePopupId(null);
     window.addEventListener("click", handleClickOutside);
     return () => window.removeEventListener("click", handleClickOutside);
   }, []);
-
-  // 🔔 Helper — push notification (phone/system alert) bhejne ke liye
-  const sendPushNotification = async (recipientUserId, interactionType, snippet) => {
-    try {
-      const ownerDoc = await getDoc(doc(db, "users", recipientUserId));
-      const ownerToken = ownerDoc.data()?.fcmToken;
-      if (!ownerToken) return;
-
-      await fetch(`${BACKEND_URL}/api/notifications/interact`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          recipientToken: ownerToken,
-          senderName: profile?.name || "Student",
-          interactionType,
-          snippet: snippet || ""
-        })
-      });
-    } catch (err) {
-      console.error("Push notification failed:", err);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1111,7 +1087,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     } catch (error) { console.error("Error deleting story:", error); }
   };
 
-  // ✅ UPDATED — ab notification + push dono jaate hain, sirf LIKE pe, unlike pe nahi
+  // ✅ PERFECTED: Direct Backend Call for Story Likes
   const toggleLike = async (story) => {
     if (!auth.currentUser) return;
     const uid = auth.currentUser.uid;
@@ -1137,26 +1113,25 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
       await updateDoc(doc(db, "stories", story.id), { likes: newLikes });
       setUserStories(userStories.map(s => s.id === story.id ? { ...s, likes: newLikes } : s));
 
-      // Sirf LIKE pe notify, unlike pe kabhi nahi, khud ki story pe kabhi nahi
       if (isLiking && story.userId !== uid) {
-        await addDoc(collection(db, "notifications"), {
-          userId: story.userId,
-          senderName: userName,
-          senderUid: uid,
-          type: "like",
-          storyId: story.id,
-          isRead: false,
-          createdAt: serverTimestamp()
-        });
-
-        await sendPushNotification(story.userId, "like_comment", "");
+        fetch(`${BACKEND_URL}/api/notifications/like-story`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            storyId: story.id,
+            storyOwnerId: story.userId,
+            currentUserId: uid,
+            currentUserName: userName,
+            isLiking: true
+          })
+        }).catch(err => console.error("Backend push failed:", err));
       }
     } catch (error) { 
       console.error("Error toggling like:", error); 
     }
   };
 
-  // ✅ UPDATED — push notification add hui
+  // ✅ PERFECTED: Direct Backend Call for Comments
   const handleAddComment = async (story) => {
     if (!auth.currentUser || !commentText.trim()) return;
 
@@ -1173,29 +1148,23 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
 
     try {
       const storyRef = doc(db, "stories", story.id);
-      await updateDoc(storyRef, {
-        comments: arrayUnion(newComment)
-      });
+      await updateDoc(storyRef, { comments: arrayUnion(newComment) });
       
       setUserStories(userStories.map(s => 
-        s.id === story.id 
-          ? { ...s, comments: [...(s.comments || []), newComment] } 
-          : s
+        s.id === story.id ? { ...s, comments: [...(s.comments || []), newComment] } : s
       ));
 
       if (story.userId !== auth.currentUser.uid) {
-        await addDoc(collection(db, "notifications"), {
-          userId: story.userId,
-          senderName: profile?.name || "Student",
-          senderUid: auth.currentUser.uid,
-          type: "comment",
-          storyId: story.id,
-          snippet: commentText.trim().slice(0, 60),
-          isRead: false,
-          createdAt: serverTimestamp()
-        });
-
-        await sendPushNotification(story.userId, "like_comment", commentText.trim());
+        fetch(`${BACKEND_URL}/api/notifications/comment`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            storyId: story.id,
+            storyOwnerId: story.userId,
+            currentUserId: auth.currentUser.uid,
+            currentUserName: profile?.name || "Student"
+          })
+        }).catch(err => console.error("Backend push failed:", err));
       }
       
       setCommentText(""); 
@@ -1204,7 +1173,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     }
   };
 
-  // ✅ UPDATED — push notification add hui
+  // ✅ PERFECTED: Direct Backend Call for Replies
   const handleAddReply = async (story, parentCommentId) => {
     if (!auth.currentUser || !commentText.trim()) return;
 
@@ -1222,34 +1191,28 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
 
     const updatedComments = (story.comments || []).map(comment => {
       if (comment.id === parentCommentId) {
-        return {
-          ...comment,
-          replies: [...(comment.replies || []), newReply]
-        };
+        return { ...comment, replies: [...(comment.replies || []), newReply] };
       }
       return comment;
     });
 
-    setUserStories(userStories.map(s => 
-      s.id === story.id ? { ...s, comments: updatedComments } : s
-    ));
+    setUserStories(userStories.map(s => s.id === story.id ? { ...s, comments: updatedComments } : s));
 
     try {
       await updateDoc(doc(db, "stories", story.id), { comments: updatedComments });
 
       if (parentCommentOwnerId && parentCommentOwnerId !== auth.currentUser.uid) {
-        await addDoc(collection(db, "notifications"), {
-          userId: parentCommentOwnerId,
-          senderName: profile?.name || "Student",
-          senderUid: auth.currentUser.uid,
-          type: "reply",
-          storyId: story.id,
-          snippet: commentText.trim().slice(0, 60),
-          isRead: false,
-          createdAt: serverTimestamp()
-        });
-
-        await sendPushNotification(parentCommentOwnerId, "reply", commentText.trim());
+        fetch(`${BACKEND_URL}/api/notifications/reply`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            storyId: story.id,
+            parentCommentOwnerId: parentCommentOwnerId,
+            currentUserId: auth.currentUser.uid,
+            currentUserName: profile?.name || "Student",
+            snippet: commentText.trim()
+          })
+        }).catch(err => console.error("Backend push failed:", err));
       }
 
       setCommentText("");
@@ -1259,7 +1222,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     }
   };
 
-  // ✅ UPDATED — push notification add hui
+  // ✅ PERFECTED: Direct Backend Call for Comment Likes
   const toggleCommentLike = async (story, commentId) => {
     if (!auth.currentUser) return;
     const uid = auth.currentUser.uid;
@@ -1274,38 +1237,29 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
         const currentLikes = comment.likes || [];
         const hasLiked = currentLikes.includes(uid);
         isLiking = !hasLiked;
-        
-        const newLikes = hasLiked 
-          ? currentLikes.filter(id => id !== uid) 
-          : [...currentLikes, uid]; 
-        
+        const newLikes = hasLiked ? currentLikes.filter(id => id !== uid) : [...currentLikes, uid]; 
         return { ...comment, likes: newLikes };
       }
       return comment;
     });
 
-    setUserStories(userStories.map(s => 
-      s.id === story.id ? { ...s, comments: updatedComments } : s
-    ));
+    setUserStories(userStories.map(s => s.id === story.id ? { ...s, comments: updatedComments } : s));
 
     try {
-      await updateDoc(doc(db, "stories", story.id), { 
-        comments: updatedComments 
-      });
+      await updateDoc(doc(db, "stories", story.id), { comments: updatedComments });
 
       if (isLiking && commentOwnerId && commentOwnerId !== uid) {
-        await addDoc(collection(db, "notifications"), {
-          userId: commentOwnerId,
-          senderName: userName,
-          senderUid: uid,
-          type: "comment_like",
-          storyId: story.id,
-          commentId: commentId,
-          isRead: false,
-          createdAt: serverTimestamp()
-        });
-
-        await sendPushNotification(commentOwnerId, "like_comment", "");
+        fetch(`${BACKEND_URL}/api/notifications/like-comment`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            commentId: commentId,
+            commentOwnerId: commentOwnerId,
+            currentUserId: uid,
+            currentUserName: userName,
+            isLiking: true
+          })
+        }).catch(err => console.error("Backend push failed:", err));
       }
     } catch (error) {
       console.error("Error toggling comment like:", error);
@@ -1313,7 +1267,8 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
   };
 
   const visibleStories = userStories.filter(t => !t.isPrivate || t.userId === auth.currentUser?.uid);
-return (
+
+  return (
     <div className="animate-fade-in pt-32 pb-20 px-6 md:px-12 lg:px-20 min-h-screen">
       <div className="max-w-7xl mx-auto">
         <FadeInSection>
@@ -1335,10 +1290,7 @@ return (
                 rows={6}
                 value={newStory}
                 onChange={(e) => setNewStory(e.target.value)}
-                placeholder={`A safe space to share your thoughts , lessons and little victories.
-Write freely.....!!
-                            
-                                Someone might find hope in your story...✨`}
+                placeholder={`A safe space to share your thoughts , lessons and little victories.\nWrite freely.....!!\nSomeone might find hope in your story...✨`}
                 className="w-full bg-[#141419] border border-white/10 rounded-2xl p-5 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-lg md:text-xl focus:outline-none focus:border-[#C8A97E]/50 transition-colors resize-y shadow-inner min-h-[200px]"
               />
               

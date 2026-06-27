@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import emailjs from '@emailjs/browser';
 import WeeklyAaina from './WeeklyAaina';
-import NotificationBell from './NotificationBell';
+import NotificationBell from './NotificationBell.jsx'; // Extention (.jsx) lagana compulsory hai
 // --- FIREBASE IMPORTS ---
 import { auth, googleProvider, db ,messaging,storage} from './firebase';
 import { updateProfile } from "firebase/auth";

@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import emailjs from '@emailjs/browser';
 import WeeklyAaina from './WeeklyAaina';
+import NotificationBell from './NotificationBell.jsx'; // Extention (.jsx) lagana compulsory hai
 // --- FIREBASE IMPORTS ---
 import { auth, googleProvider, db ,messaging,storage} from './firebase';
 import { updateProfile } from "firebase/auth";
@@ -81,6 +82,31 @@ const CustomCursor = ({ isMobile }) => {
         }
       }
     };
+    // const [realtimeNotifications, setRealtimeNotifications] = useState([]);
+
+useEffect(() => {
+  if (!auth.currentUser) return;
+
+  // Sirf current user ki notifications fetch karega jo nayi hain
+  const q = query(
+    collection(db, "notifications"),
+    where("userId", "==", auth.currentUser.uid),
+    orderBy("createdAt", "desc"),
+    limit(10)
+  );
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const loadedNotifs = [];
+    snapshot.forEach((doc) => {
+      loadedNotifs.push({ id: doc.id, ...doc.data() });
+    });
+    setRealtimeNotifications(loadedNotifs);
+  }, (error) => {
+    console.error("Error listening to notifications:", error);
+  });
+
+  return () => unsubscribe();
+}, [isLoggedIn, currentPage]); // Jab login ho ya page badle, tab refresh ho
 
     const handleMouseOver = (e) => {
       if (e.target && (e.target.closest('button') || e.target.closest('a') || (e.target.classList && e.target.classList.contains('cursor-pointer')) || e.target.closest('.cursor-pointer'))) {
@@ -114,7 +140,7 @@ const CustomCursor = ({ isMobile }) => {
   );
 };
 
-const Navbar = ({ currentPage, setPage, isLoggedIn, setIsLoggedIn, profile }) => {
+const Navbar = ({ currentPage, setPage, isLoggedIn, setIsLoggedIn, profile,notifications = [] }) => {
   const [scrollY, setScrollY] = useState(0);
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -153,6 +179,8 @@ const Navbar = ({ currentPage, setPage, isLoggedIn, setIsLoggedIn, profile }) =>
                 {link.label}
               </button>
             ))}
+            
+            {/* Yahan se tumhare Profile, Logout aur Bell wala section hai */}
             <div className="flex items-center gap-4 border-l border-white/10 pl-6">
               <div onClick={() => setPage("profile")} className="w-8 h-8 rounded-full border border-[#C8A97E]/40 overflow-hidden cursor-pointer hover:border-[#C8A97E] transition-all">
                 {profile.photoURL ? (
@@ -166,6 +194,11 @@ const Navbar = ({ currentPage, setPage, isLoggedIn, setIsLoggedIn, profile }) =>
               <button onClick={handleLogout} className="font-mono flex items-center gap-2 text-[10px] tracking-widest px-4 py-2 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-black transition-all duration-300 uppercase cursor-pointer">
                 <LogOut className="w-3.5 h-3.5" /> Logout
               </button>
+
+              {/* 🔥 YAHAN LAGA HAI BELL ICON 🔥 */}
+            {/* 🔥 YAHAN PROP PASS KARO 🔥 */}
+            <NotificationBell notifications={notifications} />
+              
             </div>
           </>
         ) : (
@@ -1112,102 +1145,155 @@ const handleSubmit = async (e) => {
     }
   };
 
-  const handleAddComment = async (story) => {
-    if (!auth.currentUser || !commentText.trim()) return;
+ const handleAddComment = async (story) => {
+  if (!auth.currentUser || !commentText.trim()) return;
 
-    const newComment = {
-      id: Date.now().toString(), 
-      uid: auth.currentUser.uid,
-      name: profile?.name || "Student",
-      photoURL: profile?.photoURL || null,
-      text: commentText.trim(),
-      likes: [], 
-      replies: [], 
-      createdAt: new Date().toISOString()
-    };
-
-    try {
-      const storyRef = doc(db, "stories", story.id);
-      await updateDoc(storyRef, {
-        comments: arrayUnion(newComment)
-      });
-      
-      setUserStories(userStories.map(s => 
-        s.id === story.id 
-          ? { ...s, comments: [...(s.comments || []), newComment] } 
-          : s
-      ));
-      
-      setCommentText(""); 
-    } catch (error) {
-      console.error("Error adding comment:", error);
-    }
+  const newComment = {
+    id: Date.now().toString(), 
+    uid: auth.currentUser.uid,
+    name: profile?.name || "Student",
+    photoURL: profile?.photoURL || null,
+    text: commentText.trim(),
+    likes: [], 
+    replies: [], 
+    createdAt: new Date().toISOString()
   };
 
-  const handleAddReply = async (story, parentCommentId) => {
-    if (!auth.currentUser || !commentText.trim()) return;
-
-    const newReply = {
-      id: Date.now().toString(),
-      uid: auth.currentUser.uid,
-      name: profile?.name || "Student",
-      photoURL: profile?.photoURL || null,
-      text: commentText.trim(),
-      createdAt: new Date().toISOString()
-    };
-
-    const updatedComments = (story.comments || []).map(comment => {
-      if (comment.id === parentCommentId) {
-        return {
-          ...comment,
-          replies: [...(comment.replies || []), newReply]
-        };
-      }
-      return comment;
+  try {
+    const storyRef = doc(db, "stories", story.id);
+    await updateDoc(storyRef, {
+      comments: arrayUnion(newComment)
     });
-
+    
     setUserStories(userStories.map(s => 
-      s.id === story.id ? { ...s, comments: updatedComments } : s
+      s.id === story.id 
+        ? { ...s, comments: [...(s.comments || []), newComment] } 
+        : s
     ));
 
-    try {
-      await updateDoc(doc(db, "stories", story.id), { comments: updatedComments });
-      setCommentText("");
-      setReplyingTo(null); 
-    } catch (error) {
-      console.error("Error adding reply:", error);
+    // ✅ Notify STORY OWNER (skip if commenting on own story)
+    if (story.userId !== auth.currentUser.uid) {
+      await addDoc(collection(db, "notifications"), {
+        userId: story.userId,
+        senderName: profile?.name || "Student",
+        senderUid: auth.currentUser.uid,
+        type: "comment",
+        storyId: story.id,
+        snippet: commentText.trim().slice(0, 60),
+        isRead: false,
+        createdAt: serverTimestamp()
+      });
     }
+    
+    setCommentText(""); 
+  } catch (error) {
+    console.error("Error adding comment:", error);
+  }
+};
+const handleAddReply = async (story, parentCommentId) => {
+  if (!auth.currentUser || !commentText.trim()) return;
+
+  // Pehle parent comment dhundo taaki uska owner pata chale
+  const parentComment = (story.comments || []).find(c => c.id === parentCommentId);
+  const parentCommentOwnerId = parentComment?.uid;
+
+  const newReply = {
+    id: Date.now().toString(),
+    uid: auth.currentUser.uid,
+    name: profile?.name || "Student",
+    photoURL: profile?.photoURL || null,
+    text: commentText.trim(),
+    createdAt: new Date().toISOString()
   };
 
-  const toggleCommentLike = async (story, commentId) => {
-    if (!auth.currentUser) return;
-    const uid = auth.currentUser.uid;
+  const updatedComments = (story.comments || []).map(comment => {
+    if (comment.id === parentCommentId) {
+      return {
+        ...comment,
+        replies: [...(comment.replies || []), newReply]
+      };
+    }
+    return comment;
+  });
 
-    const updatedComments = (story.comments || []).map(comment => {
-      if (comment.id === commentId) {
-        const currentLikes = comment.likes || [];
-        const hasLiked = currentLikes.includes(uid);
-        const newLikes = hasLiked 
-          ? currentLikes.filter(id => id !== uid) 
-          : [...currentLikes, uid]; 
-        
-        return { ...comment, likes: newLikes };
-      }
-      return comment;
+  setUserStories(userStories.map(s => 
+    s.id === story.id ? { ...s, comments: updatedComments } : s
+  ));
+
+  try {
+    await updateDoc(doc(db, "stories", story.id), { comments: updatedComments });
+
+    // ✅ KEY LOGIC: notify the COMMENT OWNER, not the story owner
+    if (parentCommentOwnerId && parentCommentOwnerId !== auth.currentUser.uid) {
+      await addDoc(collection(db, "notifications"), {
+        userId: parentCommentOwnerId, // 👈 comment owner, not story.userId
+        senderName: profile?.name || "Student",
+        senderUid: auth.currentUser.uid,
+        type: "reply",
+        storyId: story.id,
+        snippet: commentText.trim().slice(0, 60),
+        isRead: false,
+        createdAt: serverTimestamp()
+      });
+    }
+
+    setCommentText("");
+    setReplyingTo(null); 
+  } catch (error) {
+    console.error("Error adding reply:", error);
+  }
+};
+
+const toggleCommentLike = async (story, commentId) => {
+  if (!auth.currentUser) return;
+  const uid = auth.currentUser.uid;
+  const userName = profile?.name || "Student";
+
+  let isLiking = false;
+  let commentOwnerId = null;
+
+  const updatedComments = (story.comments || []).map(comment => {
+    if (comment.id === commentId) {
+      commentOwnerId = comment.uid;
+      const currentLikes = comment.likes || [];
+      const hasLiked = currentLikes.includes(uid);
+      isLiking = !hasLiked; // true if we're adding a like
+
+      const newLikes = hasLiked 
+        ? currentLikes.filter(id => id !== uid) 
+        : [...currentLikes, uid]; 
+      
+      return { ...comment, likes: newLikes };
+    }
+    return comment;
+  });
+
+  setUserStories(userStories.map(s => 
+    s.id === story.id ? { ...s, comments: updatedComments } : s
+  ));
+
+  try {
+    await updateDoc(doc(db, "stories", story.id), { 
+      comments: updatedComments 
     });
 
-    setUserStories(userStories.map(s => 
-      s.id === story.id ? { ...s, comments: updatedComments } : s
-    ));
-
-    try {
-      await updateDoc(doc(db, "stories", story.id), { 
-        comments: updatedComments 
+    // ✅ Notify comment owner ONLY on like, never unlike, never own comment
+    if (isLiking && commentOwnerId && commentOwnerId !== uid) {
+      await addDoc(collection(db, "notifications"), {
+        userId: commentOwnerId,
+        senderName: userName,
+        senderUid: uid,
+        type: "comment_like",
+        storyId: story.id,
+        commentId: commentId,
+        isRead: false,
+        createdAt: serverTimestamp()
       });
-    } catch (error) {
-      console.error("Error toggling comment like:", error);
     }
-  };
+  } catch (error) {
+    console.error("Error toggling comment like:", error);
+  }
+};
 
   const visibleStories = userStories.filter(t => !t.isPrivate || t.userId === auth.currentUser?.uid);
 
@@ -2266,7 +2352,7 @@ export default function App() {
   const [isMobile, setIsMobile] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [announcement, setAnnouncement] = useState("");
-
+const [realtimeNotifications, setRealtimeNotifications] = useState([]);
   useEffect(() => {
     const q = query(collection(db, "announcements"), orderBy("createdAt", "desc"), limit(1));
     
@@ -2296,7 +2382,18 @@ export default function App() {
       parts: [{ text: "Namaste! I am Sathi. I am here to listen, whether you want to talk about exams, stress, or just your day. You can type or use the microphone to speak to me in English, Hindi, or Hinglish. How are you feeling right now?" }]
     }
   ]);
-
+// 1. Service Worker Registration (Isse add karo)
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/firebase-messaging-sw.js')
+        .then((registration) => {
+          console.log('Service Worker registered successfully:', registration.scope);
+        })
+        .catch((err) => {
+          console.error('Service Worker registration failed:', err);
+        });
+    }
+  }, []);
   const requestNotificationPermission = async (user) => {
     try {
       const permission = await Notification.requestPermission();
@@ -2443,7 +2540,7 @@ export default function App() {
       `}} />
 
       <CustomCursor isMobile={isMobile} />
-      <Navbar currentPage={currentPage} setPage={setCurrentPage} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} profile={profile} />
+      <Navbar currentPage={currentPage} setPage={setCurrentPage} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} profile={profile} notifications={realtimeNotifications} />
       
       <main className="min-h-screen">
         {renderPage()}

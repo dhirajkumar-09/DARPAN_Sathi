@@ -2371,6 +2371,30 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [announcement, setAnnouncement] = useState("");
 const [realtimeNotifications, setRealtimeNotifications] = useState([]);
+
+useEffect(() => {
+    // Database se sabse latest announcement nikalne ka logic
+    const fetchBulletin = () => {
+      const q = query(
+        collection(db, "announcements"), 
+        orderBy("createdAt", "desc"), 
+        limit(1)
+      );
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          setAnnouncement(snapshot.docs[0].data().text);
+        } else {
+          setAnnouncement("");
+        }
+      });
+
+      return unsubscribe;
+    };
+
+    const unsub = fetchBulletin();
+    return () => unsub();
+  }, []);
 useEffect(() => {
   if (!isLoggedIn || !auth.currentUser) {
     setRealtimeNotifications([]);

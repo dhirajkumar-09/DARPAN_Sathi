@@ -1066,12 +1066,13 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
       setIsPrivatePost(false);
       setAllowCommentsPost(true);
     if (!isPrivatePost) {
-        fetch(`${BACKEND_URL}/api/notifications/broadcast-story`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            senderName: profile?.name || "Student"
-          })
+       fetch(`${BACKEND_URL}/api/notifications/broadcast-story`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    senderName: profile?.name || "Student",
+    senderUid: auth.currentUser.uid
+  })
         }).catch(err => console.error("Broadcast push failed:", err));
       }
     } catch (error) { 

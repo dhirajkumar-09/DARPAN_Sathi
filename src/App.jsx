@@ -1377,9 +1377,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
               <em className="font-bold text-[#C8A97E] not-italic">Their lives, changed.</em>
             </h1>
           </div>
-
-          {showingAllStories && (
-            <div className="max-w-3xl mx-auto mb-16 bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-3xl p-6 md:p-10 shadow-[0_0_40px_rgba(200,169,126,0.05)]">
+<div className="max-w-3xl mx-auto mb-16 bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-3xl p-6 md:p-10 shadow-[0_0_40px_rgba(200,169,126,0.05)]">
               <h3 className="font-serif text-2xl text-[#E8E4DC] mb-2">Share your journey</h3>
               <p className="font-serif text-[#A09A95] mb-6 text-sm">
                 Your story might be exactly what someone else needs to hear today.
@@ -1428,43 +1426,42 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
                 </div>
               </form>
             </div>
-          )}
+          
+<div className="flex flex-col lg:flex-row gap-8 items-start">
 
-          <div className="flex flex-col lg:flex-row gap-8">
-
-            <div className="w-full lg:w-[280px] shrink-0">
-              <div className="bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-2xl p-4 lg:sticky lg:top-28">
-                <button
+            <div className="w-full lg:w-[300px] shrink-0">
+              <div className="bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-3xl p-6 lg:sticky lg:top-28 shadow-[0_0_40px_rgba(200,169,126,0.05)]">
+              <button
                   onClick={handleShowAllStories}
-                  className={`w-full text-left px-4 py-3 rounded-xl font-mono text-[11px] tracking-widest uppercase mb-3 transition-all cursor-pointer ${
-                    showingAllStories ? "bg-[#C8A97E] text-black font-bold" : "bg-white/5 text-[#8A8580] hover:bg-white/10"
+                  className={`w-full text-left px-5 py-3.5 rounded-2xl font-mono text-[11px] tracking-widest uppercase mb-5 transition-all cursor-pointer ${
+                    showingAllStories ? "bg-[#C8A97E] text-black font-bold shadow-[0_0_20px_rgba(200,169,126,0.25)]" : "bg-white/5 text-[#8A8580] hover:bg-white/10"
                   }`}
                 >
                   All Stories
                 </button>
 
-                <div className="font-mono text-[9px] tracking-widest text-[#5A5550] uppercase px-2 mb-2">
+                <div className="font-mono text-[10px] tracking-[0.2em] text-[#5A5550] uppercase px-2 mb-3">
                   Authors
                 </div>
 
-                <div className="flex flex-col gap-1 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <div className="flex flex-col gap-2 max-h-[55vh] overflow-y-auto custom-scrollbar pr-1">
                   {sortedAuthorsList.map((author) => (
                     <button
                       key={author.userId}
                       onClick={() => handleSelectAuthor(author.userId)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all cursor-pointer text-left ${
-                        viewingAuthorId === author.userId ? "bg-[#C8A97E]/15 border border-[#C8A97E]/40" : "hover:bg-white/5"
+                      className={`flex items-center gap-3 px-3 py-3 rounded-2xl transition-all cursor-pointer text-left border ${
+                        viewingAuthorId === author.userId ? "bg-[#C8A97E]/15 border-[#C8A97E]/40" : "border-transparent hover:bg-white/5"
                       }`}
                     >
                       {author.photoURL ? (
-                        <img src={author.photoURL} alt={author.name} className="w-9 h-9 rounded-full object-cover border border-[#C8A97E]/30 shrink-0" />
+                        <img src={author.photoURL} alt={author.name} className="w-10 h-10 rounded-full object-cover border-2 border-[#C8A97E]/40 shrink-0" />
                       ) : (
-                        <div className="w-9 h-9 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center shrink-0">
-                          <span className="font-serif text-xs font-bold text-[#C8A97E]">{author.initial}</span>
+                        <div className="w-10 h-10 rounded-full bg-[#141419] border-2 border-[#C8A97E]/40 flex items-center justify-center shrink-0">
+                          <span className="font-serif text-sm font-bold text-[#C8A97E]">{author.initial}</span>
                         </div>
                       )}
                       <div className="flex flex-col overflow-hidden flex-1">
-                        <span className="font-serif text-[14px] text-[#E8E4DC] truncate flex items-center gap-1.5">
+                        <span className="font-serif text-[15px] text-[#E8E4DC] truncate flex items-center gap-1.5">
                           {author.name}
                           {author.isAdmin && (
                             <span className="font-mono text-[8px] tracking-wider text-[#C8A97E] bg-[#C8A97E]/15 border border-[#C8A97E]/30 rounded-full px-1.5 py-0.5 shrink-0">
@@ -1472,7 +1469,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
                             </span>
                           )}
                         </span>
-                        <span className="font-mono text-[9px] text-[#8A8580] uppercase">
+                        <span className="font-mono text-[10px] text-[#8A8580] uppercase tracking-wider">
                           {author.storyCount} {author.storyCount === 1 ? "story" : "stories"}
                         </span>
                       </div>
@@ -1518,7 +1515,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
                   <p className="font-serif text-[#A09A95]">Be the first to share your journey and inspire others.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-10 max-h-[80vh] overflow-y-auto custom-scrollbar pr-2">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
                   {sortedFeedStories.map((t, i) => {
                     const isMyPost = t.userId === auth.currentUser?.uid;
                     const displayPhoto = isMyPost ? profile?.photoURL : t.photoURL;

@@ -994,15 +994,19 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
   const [commentText, setCommentText] = useState(""); 
   const [replyingTo, setReplyingTo] = useState(null); 
   const [blockedUserIds, setBlockedUserIds] = useState([]);
-  // 🔥 Tumhara Asli Backend URL
+  const [viewingAuthorId, setViewingAuthorId] = useState(null);
+  const [showingAllStories, setShowingAllStories] = useState(true);
+
   const BACKEND_URL = "https://dapan-api-secure.onrender.com";
+  const ADMIN_EMAIL = "dhidna9090@gmail.com";
 
   useEffect(() => {
     const handleClickOutside = () => setOpenLikePopupId(null);
     window.addEventListener("click", handleClickOutside);
     return () => window.removeEventListener("click", handleClickOutside);
   }, []);
-   useEffect(() => {
+
+  useEffect(() => {
     const fetchBlockedUsers = async () => {
       if (!auth.currentUser) return;
       try {
@@ -1019,6 +1023,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     };
     fetchBlockedUsers();
   }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newStory.trim() || !auth.currentUser) return;
@@ -1051,6 +1056,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
         initial: profile?.name ? profile.name.charAt(0).toUpperCase() : "S",
         photoURL: profile?.photoURL || null,
         userId: auth.currentUser.uid,
+        isAdminPost: auth.currentUser.email === ADMIN_EMAIL,
         isPrivate: isPrivatePost,
         showLikesPublicly: false,
         allowComments: allowCommentsPost, 
@@ -1065,16 +1071,18 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
       setNewStory("");
       setIsPrivatePost(false);
       setAllowCommentsPost(true);
-    if (!isPrivatePost) {
-       fetch(`${BACKEND_URL}/api/notifications/broadcast-story`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    senderName: profile?.name || "Student",
-    senderUid: auth.currentUser.uid
-  })
+
+      if (!isPrivatePost) {
+        fetch(`${BACKEND_URL}/api/notifications/broadcast-story`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            senderName: profile?.name || "Student",
+            senderUid: auth.currentUser.uid
+          })
         }).catch(err => console.error("Broadcast push failed:", err));
       }
+
     } catch (error) { 
       console.error("Error saving story:", error); 
       alert("Something went wrong while posting.");
@@ -1111,7 +1119,8 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
       setUserStories(userStories.filter(s => s.id !== storyId));
     } catch (error) { console.error("Error deleting story:", error); }
   };
-   const handleBlockUser = async (targetUserId, targetUserName) => {
+
+  const handleBlockUser = async (targetUserId, targetUserName) => {
     if (!auth.currentUser || targetUserId === auth.currentUser.uid) return;
     if (!window.confirm(`Block ${targetUserName}'s posts? You won't see their stories anymore.`)) return;
 
@@ -1126,7 +1135,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
       console.error("Error blocking user:", error);
     }
   };
-  // ✅ PERFECTED: Direct Backend Call for Story Likes
+
   const toggleLike = async (story) => {
     if (!auth.currentUser) return;
     const uid = auth.currentUser.uid;
@@ -1170,7 +1179,6 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     }
   };
 
-  // ✅ PERFECTED: Direct Backend Call for Comments
   const handleAddComment = async (story) => {
     if (!auth.currentUser || !commentText.trim()) return;
 
@@ -1212,7 +1220,6 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     }
   };
 
-  // ✅ PERFECTED: Direct Backend Call for Replies
   const handleAddReply = async (story, parentCommentId) => {
     if (!auth.currentUser || !commentText.trim()) return;
 
@@ -1261,7 +1268,6 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     }
   };
 
-  // ✅ PERFECTED: Direct Backend Call for Comment Likes
   const toggleCommentLike = async (story, commentId) => {
     if (!auth.currentUser) return;
     const uid = auth.currentUser.uid;
@@ -1305,10 +1311,60 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     }
   };
 
-  const visibleStories = userStories.filter(t => 
+  const baseVisibleStories = userStories.filter(t => 
     (!t.isPrivate || t.userId === auth.currentUser?.uid) &&
     !blockedUserIds.includes(t.userId)
   );
+
+  const authorsList = [];
+  const seenAuthorIds = new Set();
+
+  baseVisibleStories.forEach(story => {
+    if (!seenAuthorIds.has(story.userId)) {
+      seenAuthorIds.add(story.userId);
+      const isMyOwn = story.userId === auth.currentUser?.uid;
+      authorsList.push({
+        userId: story.userId,
+        name: isMyOwn ? (profile?.name || "Student") : story.name,
+        photoURL: isMyOwn ? profile?.photoURL : story.photoURL,
+        initial: isMyOwn ? (profile?.name ? profile.name.charAt(0).toUpperCase() : "S") : (story.initial || "S"),
+        isAdmin: story.isAdminPost === true,
+        storyCount: baseVisibleStories.filter(s => s.userId === story.userId).length
+      });
+    }
+  });
+
+  const sortedAuthorsList = [...authorsList].sort((a, b) => {
+    if (a.isAdmin && !b.isAdmin) return -1;
+    if (!a.isAdmin && b.isAdmin) return 1;
+    return 0;
+  });
+
+  const feedStories = showingAllStories
+    ? baseVisibleStories
+    : baseVisibleStories.filter(s => s.userId === viewingAuthorId);
+
+  const sortedFeedStories = showingAllStories
+    ? [...feedStories].sort((a, b) => {
+        const aIsAdmin = a.isAdminPost === true;
+        const bIsAdmin = b.isAdminPost === true;
+        if (aIsAdmin && !bIsAdmin) return -1;
+        if (!aIsAdmin && bIsAdmin) return 1;
+        return 0;
+      })
+    : feedStories;
+
+  const handleSelectAuthor = (authorId) => {
+    setViewingAuthorId(authorId);
+    setShowingAllStories(false);
+  };
+
+  const handleShowAllStories = () => {
+    setViewingAuthorId(null);
+    setShowingAllStories(true);
+  };
+
+  const viewingAuthorInfo = sortedAuthorsList.find(a => a.userId === viewingAuthorId);
 
   return (
     <div className="animate-fade-in pt-32 pb-20 px-6 md:px-12 lg:px-20 min-h-screen">
@@ -1322,380 +1378,457 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
             </h1>
           </div>
 
-          <div className="max-w-3xl mx-auto mb-24 bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-3xl p-6 md:p-10 shadow-[0_0_40px_rgba(200,169,126,0.05)]">
-            <h3 className="font-serif text-2xl text-[#E8E4DC] mb-2">Share your journey</h3>
-            <p className="font-serif text-[#A09A95] mb-6 text-sm">
-              Your story might be exactly what someone else needs to hear today.
-            </p>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-              <textarea
-                rows={6}
-                value={newStory}
-                onChange={(e) => setNewStory(e.target.value)}
-                placeholder={`A safe space to share your thoughts , lessons and little victories.\nWrite freely.....!!\nSomeone might find hope in your story...✨`}
-                className="w-full bg-[#141419] border border-white/10 rounded-2xl p-5 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-lg md:text-xl focus:outline-none focus:border-[#C8A97E]/50 transition-colors resize-y shadow-inner min-h-[200px]"
-              />
-              
-              <div className="flex flex-wrap items-center gap-3">
-                <button 
-                  type="button" 
-                  onClick={() => setIsPrivatePost(!isPrivatePost)}
-                  className={`font-mono text-[10px] tracking-widest uppercase flex items-center gap-2 px-5 py-3 rounded-xl transition-all border cursor-pointer shadow-sm ${
-                    isPrivatePost ? "bg-white/10 border-white/20 text-[#E8E4DC]" : "bg-[#C8A97E]/10 border-[#C8A97E]/30 text-[#C8A97E] hover:bg-[#C8A97E]/20"
-                  }`}
-                >
-                  {isPrivatePost ? <><Lock className="w-4 h-4" /> Keep Private Note</> : <><Globe className="w-4 h-4" /> Share Publicly</>}
-                </button>
-
-                {!isPrivatePost && (
+          {showingAllStories && (
+            <div className="max-w-3xl mx-auto mb-16 bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-3xl p-6 md:p-10 shadow-[0_0_40px_rgba(200,169,126,0.05)]">
+              <h3 className="font-serif text-2xl text-[#E8E4DC] mb-2">Share your journey</h3>
+              <p className="font-serif text-[#A09A95] mb-6 text-sm">
+                Your story might be exactly what someone else needs to hear today.
+              </p>
+              <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                <textarea
+                  rows={6}
+                  value={newStory}
+                  onChange={(e) => setNewStory(e.target.value)}
+                  placeholder={`A safe space to share your thoughts , lessons and little victories.\nWrite freely.....!!\nSomeone might find hope in your story...✨`}
+                  className="w-full bg-[#141419] border border-white/10 rounded-2xl p-5 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-lg md:text-xl focus:outline-none focus:border-[#C8A97E]/50 transition-colors resize-y shadow-inner min-h-[200px]"
+                />
+                
+                <div className="flex flex-wrap items-center gap-3">
                   <button 
                     type="button" 
-                    onClick={() => setAllowCommentsPost(!allowCommentsPost)}
+                    onClick={() => setIsPrivatePost(!isPrivatePost)}
                     className={`font-mono text-[10px] tracking-widest uppercase flex items-center gap-2 px-5 py-3 rounded-xl transition-all border cursor-pointer shadow-sm ${
-                      !allowCommentsPost ? "bg-red-500/10 border-red-500/30 text-red-400" : "bg-[#C8A97E]/10 border-[#C8A97E]/30 text-[#C8A97E] hover:bg-[#C8A97E]/20"
+                      isPrivatePost ? "bg-white/10 border-white/20 text-[#E8E4DC]" : "bg-[#C8A97E]/10 border-[#C8A97E]/30 text-[#C8A97E] hover:bg-[#C8A97E]/20"
                     }`}
                   >
-                    <MessageCircle className="w-4 h-4" /> {allowCommentsPost ? "Comments: ON" : "Comments: OFF"}
+                    {isPrivatePost ? <><Lock className="w-4 h-4" /> Keep Private Note</> : <><Globe className="w-4 h-4" /> Share Publicly</>}
                   </button>
-                )}
-              </div>
 
-              <div className="flex flex-col sm:flex-row justify-end items-center gap-4 pt-2 border-t border-white/5">
-                <button 
-                  type="submit"
-                  disabled={isSubmitting || !newStory.trim()}
-                  className="px-8 py-3 bg-[#C8A97E] text-black font-mono text-xs tracking-widest uppercase font-bold hover:bg-white transition-colors rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto cursor-pointer shadow-[0_0_20px_rgba(200,169,126,0.2)]"
-                >
-                  {isSubmitting ? "Posting..." : "Post Story"} <Send className="w-4 h-4" />
-                </button>
-              </div>
-            </form>
-          </div>
+                  {!isPrivatePost && (
+                    <button 
+                      type="button" 
+                      onClick={() => setAllowCommentsPost(!allowCommentsPost)}
+                      className={`font-mono text-[10px] tracking-widest uppercase flex items-center gap-2 px-5 py-3 rounded-xl transition-all border cursor-pointer shadow-sm ${
+                        !allowCommentsPost ? "bg-red-500/10 border-red-500/30 text-red-400" : "bg-[#C8A97E]/10 border-[#C8A97E]/30 text-[#C8A97E] hover:bg-[#C8A97E]/20"
+                      }`}
+                    >
+                      <MessageCircle className="w-4 h-4" /> {allowCommentsPost ? "Comments: ON" : "Comments: OFF"}
+                    </button>
+                  )}
+                </div>
 
-          {visibleStories.length === 0 ? (
-            <div className="text-center py-20 border border-dashed border-[#C8A97E]/20 rounded-3xl bg-white/[0.01]">
-              <div className="w-20 h-20 mx-auto bg-[#C8A97E]/10 rounded-full flex items-center justify-center mb-6">
-                <MessageSquare className="w-10 h-10 text-[#C8A97E]" />
-              </div>
-              <h3 className="font-serif text-2xl text-[#E8E4DC] mb-2">The canvas is blank</h3>
-              <p className="font-serif text-[#A09A95]">Be the first to share your journey and inspire others.</p>
+                <div className="flex flex-col sm:flex-row justify-end items-center gap-4 pt-2 border-t border-white/5">
+                  <button 
+                    type="submit"
+                    disabled={isSubmitting || !newStory.trim()}
+                    className="px-8 py-3 bg-[#C8A97E] text-black font-mono text-xs tracking-widest uppercase font-bold hover:bg-white transition-colors rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto cursor-pointer shadow-[0_0_20px_rgba(200,169,126,0.2)]"
+                  >
+                    {isSubmitting ? "Posting..." : "Post Story"} <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </form>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
-              {visibleStories.map((t, i) => {
-                const isMyPost = t.userId === auth.currentUser?.uid;
-                const displayPhoto = isMyPost ? profile?.photoURL : t.photoURL;
-                const displayName = isMyPost ? (profile?.name || "Student") : t.name;
-                const displayInitial = isMyPost ? (profile?.name ? profile.name.charAt(0).toUpperCase() : "S") : (t.initial || 'S');
-                
-                const allowsComments = t.allowComments !== false; 
+          )}
 
-                const quoteLength = t.quote.length;
-                let textSizeClass = "text-3xl md:text-4xl lg:text-5xl leading-[1.2]"; 
-                if (quoteLength > 180) { textSizeClass = "text-lg md:text-xl lg:text-2xl leading-[1.6]"; } 
-                else if (quoteLength > 80) { textSizeClass = "text-2xl md:text-3xl lg:text-4xl leading-[1.4]"; }
-                
-                return (
-                  <div key={t.id || i} className={`relative bg-[#0A0A0F] border rounded-[2rem] p-8 md:p-10 flex flex-col transition-all duration-500 overflow-hidden group ${t.isPrivate ? 'border-white/10 opacity-80' : 'border-[#C8A97E]/30 hover:border-[#C8A97E] hover:shadow-[0_0_40px_rgba(200,169,126,0.1)]'}`}>
-                    <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(ellipse_at_center,rgba(200,169,126,0.12)_0%,transparent_70%)]" />
-                    <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: "linear-gradient(#C8A97E 1px, transparent 1px), linear-gradient(90deg, #C8A97E 1px, transparent 1px)", backgroundSize: "30px 30px" }} />
+          <div className="flex flex-col lg:flex-row gap-8">
 
-                    <div className="flex items-start justify-between relative z-10 mb-10 border-b border-[#C8A97E]/10 pb-6">
-                      <div className="flex items-center gap-5">
-                        {displayPhoto ? (
-                          <div className="w-14 h-14 rounded-full border-2 border-[#C8A97E]/80 p-0.5 shadow-[0_0_15px_rgba(200,169,126,0.2)]">
-                             <img src={displayPhoto} alt={displayName} className="w-full h-full rounded-full object-cover" />
-                          </div>
-                        ) : (
-                          <div className="w-14 h-14 rounded-full border-2 border-[#C8A97E]/80 p-0.5 shadow-[0_0_15px_rgba(200,169,126,0.2)] flex items-center justify-center bg-[#141419]">
-                            <span className="font-serif text-2xl font-bold text-[#C8A97E]">{displayInitial}</span>
-                          </div>
-                        )}
-                        <div>
-                          <div className="font-serif text-2xl font-bold text-white tracking-wide">{displayName}</div>
-                          <div className="flex flex-col gap-1 mt-1.5">
-                           <span className="font-mono text-[9px] tracking-widest text-[#C8A97E] uppercase">
-                             {t.displayTime ? `SHARED ON ${t.displayTime.toUpperCase()}` : "SHARED JUST NOW"}
-                           </span>
-                          </div>
+            <div className="w-full lg:w-[280px] shrink-0">
+              <div className="bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-2xl p-4 lg:sticky lg:top-28">
+                <button
+                  onClick={handleShowAllStories}
+                  className={`w-full text-left px-4 py-3 rounded-xl font-mono text-[11px] tracking-widest uppercase mb-3 transition-all cursor-pointer ${
+                    showingAllStories ? "bg-[#C8A97E] text-black font-bold" : "bg-white/5 text-[#8A8580] hover:bg-white/10"
+                  }`}
+                >
+                  All Stories
+                </button>
+
+                <div className="font-mono text-[9px] tracking-widest text-[#5A5550] uppercase px-2 mb-2">
+                  Authors
+                </div>
+
+                <div className="flex flex-col gap-1 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                  {sortedAuthorsList.map((author) => (
+                    <button
+                      key={author.userId}
+                      onClick={() => handleSelectAuthor(author.userId)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all cursor-pointer text-left ${
+                        viewingAuthorId === author.userId ? "bg-[#C8A97E]/15 border border-[#C8A97E]/40" : "hover:bg-white/5"
+                      }`}
+                    >
+                      {author.photoURL ? (
+                        <img src={author.photoURL} alt={author.name} className="w-9 h-9 rounded-full object-cover border border-[#C8A97E]/30 shrink-0" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center shrink-0">
+                          <span className="font-serif text-xs font-bold text-[#C8A97E]">{author.initial}</span>
                         </div>
+                      )}
+                      <div className="flex flex-col overflow-hidden flex-1">
+                        <span className="font-serif text-[14px] text-[#E8E4DC] truncate flex items-center gap-1.5">
+                          {author.name}
+                          {author.isAdmin && (
+                            <span className="font-mono text-[8px] tracking-wider text-[#C8A97E] bg-[#C8A97E]/15 border border-[#C8A97E]/30 rounded-full px-1.5 py-0.5 shrink-0">
+                              ADMIN
+                            </span>
+                          )}
+                        </span>
+                        <span className="font-mono text-[9px] text-[#8A8580] uppercase">
+                          {author.storyCount} {author.storyCount === 1 ? "story" : "stories"}
+                        </span>
                       </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
 
-                      <div className="flex items-center gap-2">
-                        {t.isPrivate && <span className="hidden sm:inline-block font-mono text-[9px] uppercase tracking-widest text-[#8A8580] bg-white/5 px-3 py-1.5 rounded-full border border-white/10 mr-2">Private Note</span>}
-                        {isMyPost && (
-                          <>
-                            {!t.isPrivate && (
-                              <button onClick={() => toggleLikesVisibility(t.id, t.showLikesPublicly)} className={`p-3 rounded-full border transition-all cursor-pointer ${t.showLikesPublicly ? 'bg-[#C8A97E]/10 border-[#C8A97E]/50 text-[#C8A97E]' : 'bg-[#141419] border-white/10 text-[#8A8580] hover:text-[#C8A97E] hover:border-[#C8A97E]/50'}`} title={t.showLikesPublicly ? "Hide Likers from Others" : "Show Likers to Everyone"}>
-                                {t.showLikesPublicly ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            <div className="flex-1 min-w-0">
+
+              {!showingAllStories && viewingAuthorInfo && (
+                <div className="bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-2xl p-5 mb-6 flex items-center gap-4">
+                  {viewingAuthorInfo.photoURL ? (
+                    <img src={viewingAuthorInfo.photoURL} alt={viewingAuthorInfo.name} className="w-14 h-14 rounded-full object-cover border-2 border-[#C8A97E]/60" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-full bg-[#141419] border-2 border-[#C8A97E]/60 flex items-center justify-center">
+                      <span className="font-serif text-xl font-bold text-[#C8A97E]">{viewingAuthorInfo.initial}</span>
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="font-serif text-xl font-bold text-white flex items-center gap-2">
+                      {viewingAuthorInfo.name}
+                      {viewingAuthorInfo.isAdmin && (
+                        <span className="font-mono text-[8px] tracking-wider text-[#C8A97E] bg-[#C8A97E]/15 border border-[#C8A97E]/30 rounded-full px-2 py-0.5">
+                          ADMIN
+                        </span>
+                      )}
+                    </h3>
+                    <p className="font-mono text-[10px] tracking-widest text-[#8A8580] uppercase">
+                      {viewingAuthorInfo.storyCount} {viewingAuthorInfo.storyCount === 1 ? "story" : "stories"} shared
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {sortedFeedStories.length === 0 ? (
+                <div className="text-center py-20 border border-dashed border-[#C8A97E]/20 rounded-3xl bg-white/[0.01]">
+                  <div className="w-20 h-20 mx-auto bg-[#C8A97E]/10 rounded-full flex items-center justify-center mb-6">
+                    <MessageSquare className="w-10 h-10 text-[#C8A97E]" />
+                  </div>
+                  <h3 className="font-serif text-2xl text-[#E8E4DC] mb-2">The canvas is blank</h3>
+                  <p className="font-serif text-[#A09A95]">Be the first to share your journey and inspire others.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-10 max-h-[80vh] overflow-y-auto custom-scrollbar pr-2">
+                  {sortedFeedStories.map((t, i) => {
+                    const isMyPost = t.userId === auth.currentUser?.uid;
+                    const displayPhoto = isMyPost ? profile?.photoURL : t.photoURL;
+                    const displayName = isMyPost ? (profile?.name || "Student") : t.name;
+                    const displayInitial = isMyPost ? (profile?.name ? profile.name.charAt(0).toUpperCase() : "S") : (t.initial || 'S');
+                    
+                    const allowsComments = t.allowComments !== false; 
+
+                    const quoteLength = t.quote.length;
+                    let textSizeClass = "text-3xl md:text-4xl lg:text-5xl leading-[1.2]"; 
+                    if (quoteLength > 180) { textSizeClass = "text-lg md:text-xl lg:text-2xl leading-[1.6]"; } 
+                    else if (quoteLength > 80) { textSizeClass = "text-2xl md:text-3xl lg:text-4xl leading-[1.4]"; }
+                    
+                    return (
+                      <div key={t.id || i} className={`relative bg-[#0A0A0F] border rounded-[2rem] p-8 md:p-10 flex flex-col transition-all duration-500 overflow-hidden group ${t.isPrivate ? 'border-white/10 opacity-80' : 'border-[#C8A97E]/30 hover:border-[#C8A97E] hover:shadow-[0_0_40px_rgba(200,169,126,0.1)]'}`}>
+                        <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(ellipse_at_center,rgba(200,169,126,0.12)_0%,transparent_70%)]" />
+                        <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: "linear-gradient(#C8A97E 1px, transparent 1px), linear-gradient(90deg, #C8A97E 1px, transparent 1px)", backgroundSize: "30px 30px" }} />
+
+                        <div className="flex items-start justify-between relative z-10 mb-10 border-b border-[#C8A97E]/10 pb-6">
+                          <div className="flex items-center gap-5">
+                            {displayPhoto ? (
+                              <div className="w-14 h-14 rounded-full border-2 border-[#C8A97E]/80 p-0.5 shadow-[0_0_15px_rgba(200,169,126,0.2)]">
+                                 <img src={displayPhoto} alt={displayName} className="w-full h-full rounded-full object-cover" />
+                              </div>
+                            ) : (
+                              <div className="w-14 h-14 rounded-full border-2 border-[#C8A97E]/80 p-0.5 shadow-[0_0_15px_rgba(200,169,126,0.2)] flex items-center justify-center bg-[#141419]">
+                                <span className="font-serif text-2xl font-bold text-[#C8A97E]">{displayInitial}</span>
+                              </div>
+                            )}
+                            <div>
+                              <div className="font-serif text-2xl font-bold text-white tracking-wide">{displayName}</div>
+                              <div className="flex flex-col gap-1 mt-1.5">
+                               <span className="font-mono text-[9px] tracking-widest text-[#C8A97E] uppercase">
+                                 {t.displayTime ? `SHARED ON ${t.displayTime.toUpperCase()}` : "SHARED JUST NOW"}
+                               </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {t.isPrivate && <span className="hidden sm:inline-block font-mono text-[9px] uppercase tracking-widest text-[#8A8580] bg-white/5 px-3 py-1.5 rounded-full border border-white/10 mr-2">Private Note</span>}
+                            {isMyPost && (
+                              <>
+                                {!t.isPrivate && (
+                                  <button onClick={() => toggleLikesVisibility(t.id, t.showLikesPublicly)} className={`p-3 rounded-full border transition-all cursor-pointer ${t.showLikesPublicly ? 'bg-[#C8A97E]/10 border-[#C8A97E]/50 text-[#C8A97E]' : 'bg-[#141419] border-white/10 text-[#8A8580] hover:text-[#C8A97E] hover:border-[#C8A97E]/50'}`} title={t.showLikesPublicly ? "Hide Likers from Others" : "Show Likers to Everyone"}>
+                                    {t.showLikesPublicly ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                  </button>
+                                )}
+                                
+                                {!t.isPrivate && (
+                                    <button onClick={() => toggleCommentsStatus(t.id, allowsComments)} className={`p-3 rounded-full border transition-all cursor-pointer ${!allowsComments ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-[#141419] border-white/10 text-[#8A8580] hover:text-[#C8A97E] hover:border-[#C8A97E]/50'}`} title={allowsComments ? "Turn Comments Off" : "Turn Comments On"}>
+                                      <MessageCircle className="w-4 h-4" />
+                                    </button>
+                                )}
+
+                                <button onClick={() => togglePrivacy(t.id, t.isPrivate)} className="p-3 rounded-full bg-[#141419] border border-white/10 text-[#8A8580] hover:text-[#C8A97E] hover:border-[#C8A97E]/50 transition-all cursor-pointer" title={t.isPrivate ? "Make Public" : "Make Private"}>
+                                  {t.isPrivate ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
+                                </button>
+                                <button onClick={() => deleteStory(t.id)} className="p-3 rounded-full bg-[#141419] border border-white/10 text-[#8A8580] hover:text-red-400 hover:border-red-400/50 transition-all cursor-pointer" title="Delete Story">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+                            {!isMyPost && (
+                              <button 
+                                onClick={() => handleBlockUser(t.userId, displayName)} 
+                                className="p-3 rounded-full bg-[#141419] border border-white/10 text-[#8A8580] hover:text-red-400 hover:border-red-400/50 transition-all cursor-pointer" 
+                                title="Block this user"
+                              >
+                                <X className="w-4 h-4" />
                               </button>
                             )}
-                            
-                            {!t.isPrivate && (
-                                <button onClick={() => toggleCommentsStatus(t.id, allowsComments)} className={`p-3 rounded-full border transition-all cursor-pointer ${!allowsComments ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-[#141419] border-white/10 text-[#8A8580] hover:text-[#C8A97E] hover:border-[#C8A97E]/50'}`} title={allowsComments ? "Turn Comments Off" : "Turn Comments On"}>
-                                  <MessageCircle className="w-4 h-4" />
-                                </button>
-                            )}
+                          </div>
+                        </div>
 
-                            <button onClick={() => togglePrivacy(t.id, t.isPrivate)} className="p-3 rounded-full bg-[#141419] border border-white/10 text-[#8A8580] hover:text-[#C8A97E] hover:border-[#C8A97E]/50 transition-all cursor-pointer" title={t.isPrivate ? "Make Public" : "Make Private"}>
-                              {t.isPrivate ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
-                            </button>
-                            <button onClick={() => deleteStory(t.id)} className="p-3 rounded-full bg-[#141419] border border-white/10 text-[#8A8580] hover:text-red-400 hover:border-red-400/50 transition-all cursor-pointer" title="Delete Story">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                        {!isMyPost && (
-                          <button 
-                            onClick={() => handleBlockUser(t.userId, displayName)} 
-                            className="p-3 rounded-full bg-[#141419] border border-white/10 text-[#8A8580] hover:text-red-400 hover:border-red-400/50 transition-all cursor-pointer" 
-                            title="Block this user"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                        <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10 px-2 sm:px-8 pb-8">
+                          <div className="font-serif text-5xl md:text-6xl text-[#C8A97E] leading-none mb-4">"</div>
+                          <p className={`font-serif text-[#E8E4DC] font-light ${textSizeClass}`}>"{t.quote}"</p>
+                        </div>
 
-                    <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10 px-2 sm:px-8 pb-8">
-                      <div className="font-serif text-5xl md:text-6xl text-[#C8A97E] leading-none mb-4">"</div>
-                      <p className={`font-serif text-[#E8E4DC] font-light ${textSizeClass}`}>"{t.quote}"</p>
-                    </div>
-
-                    <div className="flex items-end justify-between mt-auto pt-6 border-t border-white/5 relative z-10">
-                      <div className="font-mono text-[10px] tracking-widest text-[#8A8580] uppercase">
-                        {t.college && t.branch ? `${t.branch}, ${t.college}` : 'Darpan Student'}
-                      </div>
-                      
-                      {!t.isPrivate && (
-                        <div className="relative flex items-center gap-2">
+                        <div className="flex items-end justify-between mt-auto pt-6 border-t border-white/5 relative z-10">
+                          <div className="font-mono text-[10px] tracking-widest text-[#8A8580] uppercase">
+                            {t.college && t.branch ? `${t.branch}, ${t.college}` : 'Darpan Student'}
+                          </div>
                           
-                          {/* COMMENT BUTTON */}
-                          <div className="flex items-center gap-1 bg-white/5 border border-white/10 hover:border-[#C8A97E]/50 hover:bg-[#C8A97E]/10 rounded-full px-3 py-1.5 transition-all">
-                            <button
-                              onClick={(e) => { 
-                                e.stopPropagation(); 
-                                setOpenLikePopupId(null);
-                                setOpenCommentPopupId(openCommentPopupId === t.id ? null : t.id); 
-                                setReplyingTo(null); 
-                              }}
-                              className="cursor-pointer group outline-none flex items-center justify-center"
-                            >
-                              <MessageSquare className={`w-4 h-4 transition-transform group-hover:scale-110 text-[#8A8580] group-hover:text-[#C8A97E]`} />
-                            </button>
-                            <span className="font-mono text-[10px] font-bold ml-1 text-[#8A8580] cursor-pointer" onClick={() => setOpenCommentPopupId(openCommentPopupId === t.id ? null : t.id)}>
-                              {t.comments?.length || 0}
-                            </span>
-                          </div>
+                          {!t.isPrivate && (
+                            <div className="relative flex items-center gap-2">
+                              
+                              <div className="flex items-center gap-1 bg-white/5 border border-white/10 hover:border-[#C8A97E]/50 hover:bg-[#C8A97E]/10 rounded-full px-3 py-1.5 transition-all">
+                                <button
+                                  onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    setOpenLikePopupId(null);
+                                    setOpenCommentPopupId(openCommentPopupId === t.id ? null : t.id); 
+                                    setReplyingTo(null); 
+                                  }}
+                                  className="cursor-pointer group outline-none flex items-center justify-center"
+                                >
+                                  <MessageSquare className={`w-4 h-4 transition-transform group-hover:scale-110 text-[#8A8580] group-hover:text-[#C8A97E]`} />
+                                </button>
+                                <span className="font-mono text-[10px] font-bold ml-1 text-[#8A8580] cursor-pointer" onClick={() => setOpenCommentPopupId(openCommentPopupId === t.id ? null : t.id)}>
+                                  {t.comments?.length || 0}
+                                </span>
+                              </div>
 
-                          {/* LIKES BUTTON */}
-                          <div className="flex items-center gap-1 bg-white/5 border border-white/10 hover:border-[#C8A97E]/50 hover:bg-[#C8A97E]/10 rounded-full px-3 py-1.5 transition-all">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); toggleLike(t); }}
-                              className="cursor-pointer group outline-none flex items-center justify-center"
-                            >
-                              <Heart className={`w-4 h-4 transition-transform group-hover:scale-110 ${
-                                t.likes?.some(like => typeof like === 'string' ? like === auth.currentUser?.uid : like.uid === auth.currentUser?.uid)
-                                ? 'fill-[#C8A97E] text-[#C8A97E]'
-                                : 'text-[#8A8580] group-hover:text-[#C8A97E]'
-                              }`} />
-                            </button>
+                              <div className="flex items-center gap-1 bg-white/5 border border-white/10 hover:border-[#C8A97E]/50 hover:bg-[#C8A97E]/10 rounded-full px-3 py-1.5 transition-all">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); toggleLike(t); }}
+                                  className="cursor-pointer group outline-none flex items-center justify-center"
+                                >
+                                  <Heart className={`w-4 h-4 transition-transform group-hover:scale-110 ${
+                                    t.likes?.some(like => typeof like === 'string' ? like === auth.currentUser?.uid : like.uid === auth.currentUser?.uid)
+                                    ? 'fill-[#C8A97E] text-[#C8A97E]'
+                                    : 'text-[#8A8580] group-hover:text-[#C8A97E]'
+                                  }`} />
+                                </button>
 
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenCommentPopupId(null);
-                                if (openLikePopupId === t.id) {
-                                  setOpenLikePopupId(null);
-                                } else if ((isMyPost || t.showLikesPublicly) && t.likes?.length > 0) {
-                                  setOpenLikePopupId(t.id);
-                                }
-                              }}
-                              className={`font-mono text-[10px] font-bold ml-1 outline-none transition-all ${
-                                ((isMyPost || t.showLikesPublicly) && t.likes?.length > 0) ? 'cursor-pointer hover:underline hover:text-[#C8A97E]' : 'cursor-default'
-                              } ${
-                                t.likes?.some(like => typeof like === 'string' ? like === auth.currentUser?.uid : like.uid === auth.currentUser?.uid)
-                                ? 'text-[#C8A97E]' : 'text-[#8A8580]'
-                              }`}
-                            >
-                              {t.likes?.length || 0}
-                            </button>
-                          </div>
-
-                          {/* LIKES POPUP */}
-                          {openLikePopupId === t.id && (
-                            <div 
-                              className="absolute bottom-full right-0 mb-3 w-[260px] bg-[#0A0A0F] border border-[#C8A97E]/30 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] z-50 animate-fade-in"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div className="flex justify-between items-center p-3 border-b border-white/5">
-                                <span className="font-serif text-[#C8A97E] text-sm tracking-wide">Liked by {t.likes.length} People</span>
-                                <button onClick={() => setOpenLikePopupId(null)} className="text-[#8A8580] hover:text-white cursor-pointer transition-colors">
-                                  <X className="w-4 h-4" />
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenCommentPopupId(null);
+                                    if (openLikePopupId === t.id) {
+                                      setOpenLikePopupId(null);
+                                    } else if ((isMyPost || t.showLikesPublicly) && t.likes?.length > 0) {
+                                      setOpenLikePopupId(t.id);
+                                    }
+                                  }}
+                                  className={`font-mono text-[10px] font-bold ml-1 outline-none transition-all ${
+                                    ((isMyPost || t.showLikesPublicly) && t.likes?.length > 0) ? 'cursor-pointer hover:underline hover:text-[#C8A97E]' : 'cursor-default'
+                                  } ${
+                                    t.likes?.some(like => typeof like === 'string' ? like === auth.currentUser?.uid : like.uid === auth.currentUser?.uid)
+                                    ? 'text-[#C8A97E]' : 'text-[#8A8580]'
+                                  }`}
+                                >
+                                  {t.likes?.length || 0}
                                 </button>
                               </div>
 
-                              <div className="max-h-[220px] overflow-y-auto custom-scrollbar p-2 flex flex-col gap-1">
-                                {t.likes.map((likeData, idx) => {
-                                  const isOldData = typeof likeData === 'string';
-                                  const likeUid = isOldData ? likeData : likeData.uid;
-                                  
-                                  const isMyLike = likeUid === auth.currentUser?.uid;
-                                  const likerName = isMyLike ? (profile?.name || "Student") : (isOldData ? "Darpan User" : likeData.name);
-                                  const likerPhoto = isMyLike ? profile?.photoURL : (isOldData ? null : likeData.photoURL);
-                                  const likerCollege = isMyLike ? (profile?.college ? `${profile.college}, ${profile.branch || ''}` : "") : (isOldData ? "" : likeData.college);
-
-                                  return (
-                                    <div key={idx} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors">
-                                      {likerPhoto ? (
-                                        <img src={likerPhoto} alt={likerName} className="w-8 h-8 rounded-full object-cover border border-[#C8A97E]/30" />
-                                      ) : (
-                                        <div className="w-8 h-8 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center shrink-0">
-                                          <span className="font-serif text-sm font-bold text-[#C8A97E]">{likerName.charAt(0).toUpperCase()}</span>
-                                        </div>
-                                      )}
-                                      <div className="flex flex-col overflow-hidden">
-                                        <span className="font-serif text-[#E8E4DC] text-[15px] leading-tight truncate">{likerName}</span>
-                                        {likerCollege && <span className="font-mono text-[9px] text-[#8A8580] uppercase mt-0.5 truncate">{likerCollege}</span>}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-
-                              <div className="absolute top-full right-6 -mt-[1px] border-[6px] border-transparent border-t-[#C8A97E]/30"></div>
-                              <div className="absolute top-full right-6 -mt-[2px] border-[6px] border-transparent border-t-[#0A0A0F]"></div>
-                            </div>
-                          )}
-
-                          {/* COMMENTS POPUP */}
-                          {openCommentPopupId === t.id && (
-                            <div 
-                              className="absolute bottom-full right-0 mb-3 w-[300px] md:w-[350px] bg-[#0A0A0F] border border-[#C8A97E]/30 rounded-xl shadow-[0_10px_50px_rgba(0,0,0,0.9)] z-50 animate-fade-in flex flex-col"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div className="flex justify-between items-center p-4 border-b border-white/5">
-                                <span className="font-serif text-[#C8A97E] text-base tracking-wide">Comments ({t.comments?.length || 0})</span>
-                                <button onClick={() => setOpenCommentPopupId(null)} className="text-[#8A8580] hover:text-white cursor-pointer transition-colors">
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </div>
-
-                              <div className="max-h-[250px] min-h-[100px] overflow-y-auto custom-scrollbar p-3 flex flex-col gap-3">
-                                {!t.comments || t.comments.length === 0 ? (
-                                  <div className="text-center font-serif text-[#5A5550] text-sm py-8">
-                                    No comments yet. Start the conversation!
-                                  </div>
-                                ) : (
-                                  t.comments.map((comment) => (
-                                    <div key={comment.id} className="flex flex-col bg-white/[0.02] p-3 rounded-xl border border-white/[0.02] gap-2">
-                                      <div className="flex items-start gap-3">
-                                        {comment.photoURL ? (
-                                          <img src={comment.photoURL} alt={comment.name} className="w-7 h-7 rounded-full object-cover border border-[#C8A97E]/30 shrink-0" />
-                                        ) : (
-                                          <div className="w-7 h-7 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center shrink-0">
-                                            <span className="font-serif text-xs font-bold text-[#C8A97E]">{comment.name.charAt(0).toUpperCase()}</span>
-                                          </div>
-                                        )}
-                                        <div className="flex flex-col flex-grow">
-                                          <div className="flex items-baseline gap-2 justify-between">
-                                            <span className="font-serif text-[#E8E4DC] text-sm font-semibold">{comment.name}</span>
-                                          </div>
-                                          <span className="font-serif text-[#A09A95] text-[13px] leading-snug mt-0.5 break-words">{comment.text}</span>
-                                          
-                                          {/* COMMENT INTERACTIONS */}
-                                          <div className="flex items-center gap-4 mt-2">
-                                            <button 
-                                              onClick={(e) => { e.stopPropagation(); toggleCommentLike(t, comment.id); }}
-                                              className="flex items-center gap-1 text-[#8A8580] hover:text-[#C8A97E] transition-colors cursor-pointer"
-                                            >
-                                              <Heart className={`w-3 h-3 ${comment.likes?.includes(auth.currentUser?.uid) ? 'fill-[#C8A97E] text-[#C8A97E]' : ''}`} />
-                                              <span className="font-mono text-[9px] font-bold">{comment.likes?.length || ''}</span>
-                                            </button>
-                                            
-                                            {allowsComments && (
-                                              <button 
-                                                onClick={() => setReplyingTo({ commentId: comment.id, name: comment.name })}
-                                                className="font-mono text-[9px] uppercase text-[#8A8580] hover:text-[#C8A97E] font-bold tracking-wider cursor-pointer"
-                                              >
-                                                Reply
-                                              </button>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                      {/* REPLIES */}
-                                      {comment.replies && comment.replies.map((reply) => (
-                                        <div key={reply.id} className="flex items-start gap-2 bg-white/[0.01] p-2 rounded-lg ml-6 border-l border-[#C8A97E]/20 mt-1 pl-3">
-                                          {reply.photoURL ? (
-                                            <img src={reply.photoURL} alt={reply.name} className="w-5 h-5 rounded-full object-cover border border-[#C8A97E]/20 shrink-0" />
-                                          ) : (
-                                            <div className="w-5 h-5 rounded-full bg-[#141419] border border-[#C8A97E]/20 flex items-center justify-center shrink-0">
-                                              <span className="font-serif text-[10px] font-bold text-[#C8A97E]">{reply.name.charAt(0).toUpperCase()}</span>
-                                            </div>
-                                          )}
-                                          <div className="flex flex-col">
-                                            <span className="font-serif text-[#E8E4DC] text-xs font-semibold">{reply.name}</span>
-                                            <span className="font-serif text-[#A09A95] text-xs leading-snug mt-0.5 break-words">{reply.text}</span>
-                                          </div>
-                                        </div>
-                                      ))}
-
-                                    </div>
-                                  ))
-                                )}
-                              </div>
-
-                              {allowsComments ? (
-                                <div className="border-t border-white/5 bg-[#141419]/50 rounded-b-xl p-3 flex flex-col gap-2">
-                                  {replyingTo && (
-                                    <div className="flex justify-between items-center bg-[#C8A97E]/10 border border-[#C8A97E]/20 px-2 py-1 rounded-md">
-                                      <span className="font-mono text-[9px] text-[#C8A97E] uppercase tracking-wider">Replying to {replyingTo.name}...</span>
-                                      <button onClick={() => setReplyingTo(null)} className="text-red-400 hover:text-white"><X className="w-3 h-3" /></button>
-                                    </div>
-                                  )}
-                                  <div className="flex gap-2">
-                                    <input 
-                                      type="text" 
-                                      value={commentText}
-                                      onChange={(e) => setCommentText(e.target.value)}
-                                      placeholder={replyingTo ? `Write a reply...` : "Add a comment..."}
-                                      className="flex-grow bg-[#1A1A24] border border-white/10 rounded-lg px-3 py-2 text-[#E8E4DC] text-sm font-serif focus:outline-none focus:border-[#C8A97E]/50"
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && commentText.trim()) {
-                                          if (replyingTo) handleAddReply(t, replyingTo.commentId);
-                                          else handleAddComment(t);
-                                        }
-                                      }}
-                                    />
-                                    <button 
-                                      onClick={() => {
-                                        if (replyingTo) handleAddReply(t, replyingTo.commentId);
-                                        else handleAddComment(t);
-                                      }}
-                                      disabled={!commentText.trim()}
-                                      className="bg-[#C8A97E] text-black p-2 rounded-lg hover:bg-white transition-colors disabled:opacity-50 cursor-pointer"
-                                    >
-                                      <Send className="w-4 h-4" />
+                              {openLikePopupId === t.id && (
+                                <div 
+                                  className="absolute bottom-full right-0 mb-3 w-[260px] bg-[#0A0A0F] border border-[#C8A97E]/30 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] z-50 animate-fade-in"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <div className="flex justify-between items-center p-3 border-b border-white/5">
+                                    <span className="font-serif text-[#C8A97E] text-sm tracking-wide">Liked by {t.likes.length} People</span>
+                                    <button onClick={() => setOpenLikePopupId(null)} className="text-[#8A8580] hover:text-white cursor-pointer transition-colors">
+                                      <X className="w-4 h-4" />
                                     </button>
                                   </div>
+
+                                  <div className="max-h-[220px] overflow-y-auto custom-scrollbar p-2 flex flex-col gap-1">
+                                    {t.likes.map((likeData, idx) => {
+                                      const isOldData = typeof likeData === 'string';
+                                      const likeUid = isOldData ? likeData : likeData.uid;
+                                      
+                                      const isMyLike = likeUid === auth.currentUser?.uid;
+                                      const likerName = isMyLike ? (profile?.name || "Student") : (isOldData ? "Darpan User" : likeData.name);
+                                      const likerPhoto = isMyLike ? profile?.photoURL : (isOldData ? null : likeData.photoURL);
+                                      const likerCollege = isMyLike ? (profile?.college ? `${profile.college}, ${profile.branch || ''}` : "") : (isOldData ? "" : likeData.college);
+
+                                      return (
+                                        <div key={idx} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors">
+                                          {likerPhoto ? (
+                                            <img src={likerPhoto} alt={likerName} className="w-8 h-8 rounded-full object-cover border border-[#C8A97E]/30" />
+                                          ) : (
+                                            <div className="w-8 h-8 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center shrink-0">
+                                              <span className="font-serif text-sm font-bold text-[#C8A97E]">{likerName.charAt(0).toUpperCase()}</span>
+                                            </div>
+                                          )}
+                                          <div className="flex flex-col overflow-hidden">
+                                            <span className="font-serif text-[#E8E4DC] text-[15px] leading-tight truncate">{likerName}</span>
+                                            {likerCollege && <span className="font-mono text-[9px] text-[#8A8580] uppercase mt-0.5 truncate">{likerCollege}</span>}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+
+                                  <div className="absolute top-full right-6 -mt-[1px] border-[6px] border-transparent border-t-[#C8A97E]/30"></div>
+                                  <div className="absolute top-full right-6 -mt-[2px] border-[6px] border-transparent border-t-[#0A0A0F]"></div>
                                 </div>
-                              ) : (
-                                <div className="p-3 border-t border-white/5 bg-red-500/5 rounded-b-xl text-center">
-                                  <span className="font-mono text-[10px] text-red-400/80 uppercase tracking-widest">Comments are turned off</span>
+                              )}
+
+                              {openCommentPopupId === t.id && (
+                                <div 
+                                  className="absolute bottom-full right-0 mb-3 w-[300px] md:w-[350px] bg-[#0A0A0F] border border-[#C8A97E]/30 rounded-xl shadow-[0_10px_50px_rgba(0,0,0,0.9)] z-50 animate-fade-in flex flex-col"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <div className="flex justify-between items-center p-4 border-b border-white/5">
+                                    <span className="font-serif text-[#C8A97E] text-base tracking-wide">Comments ({t.comments?.length || 0})</span>
+                                    <button onClick={() => setOpenCommentPopupId(null)} className="text-[#8A8580] hover:text-white cursor-pointer transition-colors">
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+
+                                  <div className="max-h-[250px] min-h-[100px] overflow-y-auto custom-scrollbar p-3 flex flex-col gap-3">
+                                    {!t.comments || t.comments.length === 0 ? (
+                                      <div className="text-center font-serif text-[#5A5550] text-sm py-8">
+                                        No comments yet. Start the conversation!
+                                      </div>
+                                    ) : (
+                                      t.comments.map((comment) => (
+                                        <div key={comment.id} className="flex flex-col bg-white/[0.02] p-3 rounded-xl border border-white/[0.02] gap-2">
+                                          <div className="flex items-start gap-3">
+                                            {comment.photoURL ? (
+                                              <img src={comment.photoURL} alt={comment.name} className="w-7 h-7 rounded-full object-cover border border-[#C8A97E]/30 shrink-0" />
+                                            ) : (
+                                              <div className="w-7 h-7 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center shrink-0">
+                                                <span className="font-serif text-xs font-bold text-[#C8A97E]">{comment.name.charAt(0).toUpperCase()}</span>
+                                              </div>
+                                            )}
+                                            <div className="flex flex-col flex-grow">
+                                              <div className="flex items-baseline gap-2 justify-between">
+                                                <span className="font-serif text-[#E8E4DC] text-sm font-semibold">{comment.name}</span>
+                                              </div>
+                                              <span className="font-serif text-[#A09A95] text-[13px] leading-snug mt-0.5 break-words">{comment.text}</span>
+                                              
+                                              <div className="flex items-center gap-4 mt-2">
+                                                <button 
+                                                  onClick={(e) => { e.stopPropagation(); toggleCommentLike(t, comment.id); }}
+                                                  className="flex items-center gap-1 text-[#8A8580] hover:text-[#C8A97E] transition-colors cursor-pointer"
+                                                >
+                                                  <Heart className={`w-3 h-3 ${comment.likes?.includes(auth.currentUser?.uid) ? 'fill-[#C8A97E] text-[#C8A97E]' : ''}`} />
+                                                  <span className="font-mono text-[9px] font-bold">{comment.likes?.length || ''}</span>
+                                                </button>
+                                                
+                                                {allowsComments && (
+                                                  <button 
+                                                    onClick={() => setReplyingTo({ commentId: comment.id, name: comment.name })}
+                                                    className="font-mono text-[9px] uppercase text-[#8A8580] hover:text-[#C8A97E] font-bold tracking-wider cursor-pointer"
+                                                  >
+                                                    Reply
+                                                  </button>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          {comment.replies && comment.replies.map((reply) => (
+                                            <div key={reply.id} className="flex items-start gap-2 bg-white/[0.01] p-2 rounded-lg ml-6 border-l border-[#C8A97E]/20 mt-1 pl-3">
+                                              {reply.photoURL ? (
+                                                <img src={reply.photoURL} alt={reply.name} className="w-5 h-5 rounded-full object-cover border border-[#C8A97E]/20 shrink-0" />
+                                              ) : (
+                                                <div className="w-5 h-5 rounded-full bg-[#141419] border border-[#C8A97E]/20 flex items-center justify-center shrink-0">
+                                                  <span className="font-serif text-[10px] font-bold text-[#C8A97E]">{reply.name.charAt(0).toUpperCase()}</span>
+                                                </div>
+                                              )}
+                                              <div className="flex flex-col">
+                                                <span className="font-serif text-[#E8E4DC] text-xs font-semibold">{reply.name}</span>
+                                                <span className="font-serif text-[#A09A95] text-xs leading-snug mt-0.5 break-words">{reply.text}</span>
+                                              </div>
+                                            </div>
+                                          ))}
+
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+
+                                  {allowsComments ? (
+                                    <div className="border-t border-white/5 bg-[#141419]/50 rounded-b-xl p-3 flex flex-col gap-2">
+                                      {replyingTo && (
+                                        <div className="flex justify-between items-center bg-[#C8A97E]/10 border border-[#C8A97E]/20 px-2 py-1 rounded-md">
+                                          <span className="font-mono text-[9px] text-[#C8A97E] uppercase tracking-wider">Replying to {replyingTo.name}...</span>
+                                          <button onClick={() => setReplyingTo(null)} className="text-red-400 hover:text-white"><X className="w-3 h-3" /></button>
+                                        </div>
+                                      )}
+                                      <div className="flex gap-2">
+                                        <input 
+                                          type="text" 
+                                          value={commentText}
+                                          onChange={(e) => setCommentText(e.target.value)}
+                                          placeholder={replyingTo ? `Write a reply...` : "Add a comment..."}
+                                          className="flex-grow bg-[#1A1A24] border border-white/10 rounded-lg px-3 py-2 text-[#E8E4DC] text-sm font-serif focus:outline-none focus:border-[#C8A97E]/50"
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && commentText.trim()) {
+                                              if (replyingTo) handleAddReply(t, replyingTo.commentId);
+                                              else handleAddComment(t);
+                                            }
+                                          }}
+                                        />
+                                        <button 
+                                          onClick={() => {
+                                            if (replyingTo) handleAddReply(t, replyingTo.commentId);
+                                            else handleAddComment(t);
+                                          }}
+                                          disabled={!commentText.trim()}
+                                          className="bg-[#C8A97E] text-black p-2 rounded-lg hover:bg-white transition-colors disabled:opacity-50 cursor-pointer"
+                                        >
+                                          <Send className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="p-3 border-t border-white/5 bg-red-500/5 rounded-b-xl text-center">
+                                      <span className="font-mono text-[10px] text-red-400/80 uppercase tracking-widest">Comments are turned off</span>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
                           )}
                         </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </FadeInSection>
       </div>
     </div>

@@ -2096,6 +2096,129 @@ const handleSave = async () => {
     </div>
   );
 };
+const ProfileSetupPage = ({ profile, setProfile, onComplete }) => {
+  const [nameInput, setNameInput] = useState(profile.name || "");
+  const [collegeInput, setCollegeInput] = useState(profile.college || "");
+  const [branchInput, setBranchInput] = useState(profile.branch || "");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleContinue = async (e) => {
+    e.preventDefault();
+    if (!auth.currentUser || !nameInput.trim()) return;
+    setIsSaving(true);
+
+    try {
+      const userDocRef = doc(db, "users", auth.currentUser.uid);
+      await setDoc(userDocRef, {
+        name: nameInput.trim(),
+        college: collegeInput.trim(),
+        branch: branchInput.trim(),
+        profileComplete: true,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      setProfile(prev => ({
+        ...prev,
+        name: nameInput.trim(),
+        college: collegeInput.trim(),
+        branch: branchInput.trim()
+      }));
+
+      onComplete();
+    } catch (error) {
+      console.error("Error saving profile setup:", error);
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="animate-fade-in min-h-screen flex items-center justify-center pt-20 px-6 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(200,169,126,0.03)_0%,transparent_50%)] pointer-events-none" />
+      <div className="w-full max-w-md bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-2xl p-8 shadow-[0_0_50px_rgba(200,169,126,0.1)] relative z-10">
+        
+        <div className="text-center mb-8">
+          <div className="font-mono text-[10px] tracking-[0.25em] text-[#C8A97E] uppercase mb-2">Almost there</div>
+          <h2 className="font-serif text-3xl font-light text-[#E8E4DC]">Complete your profile</h2>
+          <p className="mt-2 font-serif text-[#A09A95] text-sm">
+            This helps Darpan personalize your space.
+          </p>
+        </div>
+
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-20 h-20 rounded-full border-2 border-[#C8A97E]/50 overflow-hidden bg-[#141419] flex items-center justify-center shadow-[0_0_20px_rgba(200,169,126,0.15)]">
+            {profile.photoURL ? (
+              <img src={profile.photoURL} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <span className="font-serif text-2xl font-bold text-[#C8A97E]">
+                {nameInput ? nameInput.charAt(0).toUpperCase() : "S"}
+              </span>
+            )}
+          </div>
+          <span className="font-mono text-[10px] text-[#5A5550] mt-2">
+            Synced from your Google account
+          </span>
+        </div>
+
+        <form onSubmit={handleContinue} className="space-y-5">
+          <div className="space-y-2">
+            <label className="font-mono text-[10px] tracking-widest text-[#8A8580] uppercase block">Full name</label>
+            <div className="relative">
+              <User className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#5A5550]" />
+              <input
+                type="text"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder="Enter your name"
+                className="w-full bg-[#141419] border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-[#E8E4DC] font-serif focus:outline-none focus:border-[#C8A97E]/50 transition-colors shadow-inner"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="font-mono text-[10px] tracking-widest text-[#8A8580] uppercase block">Name of College or school</label>
+            <div className="relative">
+              <Building className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#5A5550]" />
+              <input
+                type="text"
+                value={collegeInput}
+                onChange={(e) => setCollegeInput(e.target.value)}
+                placeholder="e.g. BCE Bakhtiyarpur"
+                className="w-full bg-[#141419] border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-[#E8E4DC] font-serif focus:outline-none focus:border-[#C8A97E]/50 transition-colors shadow-inner"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="font-mono text-[10px] tracking-widest text-[#8A8580] uppercase block">Branch or class</label>
+            <div className="relative">
+              <BookOpen className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#5A5550]" />
+              <input
+                type="text"
+                value={branchInput}
+                onChange={(e) => setBranchInput(e.target.value)}
+                placeholder="e.g. CSE, or Class 12"
+                className="w-full bg-[#141419] border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-[#E8E4DC] font-serif focus:outline-none focus:border-[#C8A97E]/50 transition-colors shadow-inner"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSaving || !nameInput.trim()}
+            className="w-full py-4 bg-[#C8A97E] text-black font-mono text-xs tracking-widest uppercase font-bold hover:bg-white transition-colors rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-[0_0_20px_rgba(200,169,126,0.2)]"
+          >
+            {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Continue to Darpan"}
+          </button>
+
+          <p className="text-center font-mono text-[10px] text-[#5A5550]">
+            You can edit this anytime from your profile.
+          </p>
+        </form>
+      </div>
+    </div>
+  );
+};
 const ProfilePage = ({ profile, setProfile }) => {
   const [nameInput, setNameInput] = useState(profile.name || "");
   const [collegeInput, setCollegeInput] = useState(profile.college || "");
@@ -2558,7 +2681,8 @@ useEffect(() => {
   const [profile, setProfile] = useState({
     name: "Student", email: "", photoURL: null, college: "", branch: ""
   });
-
+const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
+  const [isCheckingProfile, setIsCheckingProfile] = useState(true);
   const [chatMessages, setChatMessages] = useState([
     {
       role: "model",
@@ -2649,8 +2773,7 @@ useEffect(() => {
       setUserStories(loadedStories);
     } catch (error) { console.error("Failed to fetch stories:", error); }
   };
-
-  useEffect(() => {
+useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async(user) => {
       if (user) {
         setIsLoggedIn(true);
@@ -2661,28 +2784,77 @@ useEffect(() => {
           photoURL: user.photoURL || prev.photoURL
         }));
 
+        try {
+          const userDocRef = doc(db, "users", user.uid);
+          const docSnap = await getDoc(userDocRef);
+          const userData = docSnap.exists() ? docSnap.data() : null;
+
+          const hasCollege = userData?.college && userData.college.trim() !== "";
+          const hasBranch = userData?.branch && userData.branch.trim() !== "";
+
+          if (hasCollege && hasBranch) {
+            setProfile(prev => ({
+              ...prev,
+              college: userData.college,
+              branch: userData.branch,
+              name: userData.name || prev.name
+            }));
+            setNeedsProfileSetup(false);
+          } else {
+            if (userData?.name) {
+              setProfile(prev => ({ ...prev, name: userData.name }));
+            }
+            setNeedsProfileSetup(true);
+          }
+        } catch (error) {
+          console.error("Error checking profile completeness:", error);
+          setNeedsProfileSetup(true);
+        }
+
+        setIsCheckingProfile(false);
+
         fetchUserDiaries();
         fetchUserChats();
         fetchPublicStories();
         await requestNotificationPermission(user);
       } else {
         setIsLoggedIn(false);
+        setIsCheckingProfile(false);
       }
     });
 
     return () => unsubscribe();
   }, []);
-
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (!isLoggedIn && currentPage !== "login") setCurrentPage("landing");
-    else if (isLoggedIn && (currentPage === "login" || currentPage === "landing")) setCurrentPage("home");
-  }, [isLoggedIn, currentPage]);
-
-  const renderPage = () => {
+    else if (isLoggedIn && !needsProfileSetup && (currentPage === "login" || currentPage === "landing")) setCurrentPage("home");
+  }, [isLoggedIn, currentPage, needsProfileSetup]);
+const renderPage = () => {
     if (!isLoggedIn) {
       if (currentPage === "login") return <AuthPage setPage={setCurrentPage} setIsLoggedIn={setIsLoggedIn} />;
       return <LandingPage setPage={setCurrentPage} />;
+    }
+
+    if (isCheckingProfile) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-[#C8A97E] animate-spin" />
+        </div>
+      );
+    }
+
+    if (needsProfileSetup) {
+      return (
+        <ProfileSetupPage
+          profile={profile}
+          setProfile={setProfile}
+          onComplete={() => {
+            setNeedsProfileSetup(false);
+            setCurrentPage("home");
+          }}
+        />
+      );
     }
     
     switch(currentPage) {

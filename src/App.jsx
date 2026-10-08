@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   MessageSquare, Sparkles, Brain, Shield, ArrowRight, Play, Check, LogOut, 
   Send, RefreshCw, Loader2, User, BarChart, Calendar, Lightbulb, TrendingUp,
@@ -757,7 +757,8 @@ const ChatPage = ({ messages, setMessages }) => {
           formattedMessages.push({ role: msg.role, parts: [{ text: msg.parts[0].text }] });
         }
       }
-      let finalApiMessages = formattedMessages.slice(-6);
+      let finalApiMessages = formattedMessages.slice(-14); // Keep last 14 msgs for rich memory
+
       if (finalApiMessages.length > 0 && finalApiMessages[0].role === "model") finalApiMessages.shift();
 
       const response = await fetch("https://dapan-api-secure.onrender.com/api/chat", {
@@ -1116,7 +1117,7 @@ const HomePage = ({ setPage, announcement }) => {
         }
       }
 
-      let finalApiMessages = geminiFormatMessages.slice(-6);
+      let finalApiMessages = geminiFormatMessages.slice(-10);
       if (finalApiMessages.length > 0 && finalApiMessages[0].role === "model") {
          finalApiMessages.shift();
       }

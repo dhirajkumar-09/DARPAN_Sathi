@@ -3,7 +3,7 @@ import {
   MessageSquare, Sparkles, Brain, Shield, ArrowRight, Play, Check, LogOut, 
   Send, RefreshCw, Loader2, User, BarChart, Calendar, Lightbulb, TrendingUp,
   Mic, MicOff, Volume2, VolumeX, Star, MessageCircle, X, ChevronLeft, ChevronRight,
-  Camera, Mail, BookOpen, Building , Lock, Globe, Trash2 , Share2 ,Heart, Eye, EyeOff, Menu
+  Camera, Mail, BookOpen, Building , Lock, Globe, Trash2 , Share2 ,Heart, Eye, EyeOff, Menu, Copy, Search
 } from "lucide-react";
 import emailjs from '@emailjs/browser';
 import WeeklyAaina from './WeeklyAaina';
@@ -574,6 +574,7 @@ const ChatPage = ({ messages, setMessages }) => {
   const [currentMood, setCurrentMood]         = useState('neutral');
   const [showCrisisPanel, setShowCrisisPanel] = useState(false);
   const [showQuickPrompts, setShowQuickPrompts] = useState(true);
+  const [copiedIndex, setCopiedIndex] = useState(null);
 
   const messagesEndRef  = useRef(null);
   const recognitionRef  = useRef(null);
@@ -1270,6 +1271,24 @@ const HomePage = ({ setPage, announcement }) => {
                   </div>
                 )}
                 <div ref={miniChatEndRef} />
+              </div>
+              
+              {/* Quick conversation starters */}
+              <div className="px-3 pt-2 pb-1 bg-[#0A0A0F]/90 border-t border-white/5 flex gap-1.5 overflow-x-auto custom-scrollbar">
+                {[
+                  "Exams stress ho raha hai 😓",
+                  "Feeling calm today ✨",
+                  "Tell me something peaceful 🌿"
+                ].map((pill, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => { setMiniChatInput(pill); handleMiniChatSend(pill); }}
+                    className="text-[9px] font-mono px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[#A09A95] hover:border-[#C8A97E]/50 hover:text-[#C8A97E] whitespace-nowrap transition-colors cursor-pointer"
+                  >
+                    {pill}
+                  </button>
+                ))}
               </div>
               
               {/* Widget Input */}
@@ -2347,6 +2366,7 @@ const DiaryPage = ({ diaryEntries, setDiaryEntries }) => {
   const [newEntry, setNewEntry] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [diarySearch, setDiarySearch] = useState("");
   
   const todayFormatted = new Date().toLocaleDateString('en-IN', { 
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 

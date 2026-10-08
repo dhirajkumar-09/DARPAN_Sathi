@@ -3,6 +3,7 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
   }
   body {
     margin: 0;
@@ -11,6 +12,12 @@
     color: #E8E4DC;
     font-family: 'Cormorant Garamond', Georgia, serif;
     overflow-x: hidden;
+    selection-background-color: rgba(200, 169, 126, 0.3);
+  }
+
+  ::selection {
+    background-color: rgba(200, 169, 126, 0.35);
+    color: #FFFFFF;
   }
 }
 
@@ -41,7 +48,7 @@
   background: #06060A;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a2620;
+  background: #23201a;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -55,19 +62,32 @@
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(200, 169, 126, 0.3);
+  background: rgba(200, 169, 126, 0.25);
   border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(200, 169, 126, 0.6);
 }
 
+/* Interactive transitions */
+button, a {
+  user-select: none;
+}
+
+.interactive-card {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.interactive-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in {
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes orbFloat {
@@ -84,4 +104,21 @@
 @keyframes borderGlow {
   0%, 100% { border-color: rgba(200, 169, 126, 0.15); box-shadow: 0 0 15px rgba(200, 169, 126, 0.05); }
   50% { border-color: rgba(200, 169, 126, 0.45); box-shadow: 0 0 25px rgba(200, 169, 126, 0.15); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 15px rgba(200, 169, 126, 0.2); }
+  50% { box-shadow: 0 0 30px rgba(200, 169, 126, 0.5); }
+}
+.animate-pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+@keyframes heartPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.animate-heart-pop {
+  animation: heartPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }

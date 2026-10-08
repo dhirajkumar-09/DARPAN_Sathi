@@ -134,6 +134,90 @@ const CustomCursor = ({ isMobile }) => {
   );
 };
 
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// PWA Install Banner â€” "Add to Home Screen" like WhatsApp
+// Shows a native-style banner on Android Chrome browsers
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+const PWAInstallBanner = () => {
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showBanner, setShowBanner] = useState(false);
+
+  useEffect(() => {
+    // Don't show if already installed as PWA
+    if (window.matchMedia('(display-mode: standalone)').matches) return;
+    // Don't show if user already dismissed it
+    if (localStorage.getItem('pwa_banner_dismissed')) return;
+
+    const handler = (e) => {
+      e.preventDefault();           // Stop Chrome's default mini-infobar
+      setDeferredPrompt(e);         // Save for later use
+      setShowBanner(true);          // Show our custom banner
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  // Also listen for notification-click messages from service worker
+  useEffect(() => {
+    const handleSWMessage = (event) => {
+      if (event.data?.type === 'NOTIFICATION_CLICK') {
+        const url = event.data.url || '';
+        // Extract page name from URL and dispatch navigation event
+        const match = url.match(/[?&]page=([^&]+)/);
+        if (match) {
+          window.dispatchEvent(new CustomEvent('sw_navigate', { detail: { page: match[1] } }));
+        }
+      }
+    };
+    navigator.serviceWorker?.addEventListener('message', handleSWMessage);
+    return () => navigator.serviceWorker?.removeEventListener('message', handleSWMessage);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`PWA install outcome: ${outcome}`);
+    setDeferredPrompt(null);
+    setShowBanner(false);
+    localStorage.setItem('pwa_banner_dismissed', '1');
+  };
+
+  const handleDismiss = () => {
+    setShowBanner(false);
+    localStorage.setItem('pwa_banner_dismissed', '1');
+  };
+
+  if (!showBanner) return null;
+
+  return (
+    <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-80 z-[200] animate-fade-in">
+      <div className="bg-[#141419] border border-[#C8A97E]/40 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] p-4 flex items-center gap-4">
+        <img src="/icon-192.png" alt="DARPAN" className="w-12 h-12 rounded-xl flex-shrink-0 object-cover" />
+        <div className="flex-1 min-w-0">
+          <p className="font-serif text-[#E8E4DC] text-sm font-bold leading-tight">Install DARPAN App</p>
+          <p className="font-mono text-[10px] text-[#8A8580] mt-0.5 tracking-wide">Get notifications like WhatsApp. Works offline too!</p>
+        </div>
+        <div className="flex flex-col gap-1.5 flex-shrink-0">
+          <button
+            onClick={handleInstall}
+            className="px-3 py-1.5 bg-[#C8A97E] text-black font-mono text-[10px] font-bold tracking-widest uppercase rounded-lg hover:bg-white transition-colors cursor-pointer"
+          >
+            Install
+          </button>
+          <button
+            onClick={handleDismiss}
+            className="px-3 py-1 font-mono text-[10px] text-[#8A8580] hover:text-[#E8E4DC] transition-colors cursor-pointer text-center"
+          >
+            Not now
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Navbar = ({ currentPage, setPage, isLoggedIn, setIsLoggedIn, profile, notifications = [] }) => {
   const [scrollY, setScrollY] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -333,7 +417,7 @@ const Footer = () => {
             >
               <Shield className="w-4 h-4 text-[#A8C87E] group-hover:scale-110 transition-transform" />
               <span className="font-mono text-[10px] uppercase tracking-widest flex items-center gap-1">
-                Google Verified <span className="text-[8px] opacity-70">🔗</span>
+                Google Verified <span className="text-[8px] opacity-70">ðŸ”—</span>
               </span>
             </a>
             
@@ -349,7 +433,7 @@ const Footer = () => {
               DARP<span className="text-[#C8A97E]/40">AN</span>
             </div>
             <div className="font-mono text-[9px] md:text-[10px] tracking-widest text-[#5A5550] uppercase text-center">
-              Made with care for Indian Students · © {new Date().getFullYear()} Darpan
+              Made with care for Indian Students Â· Â© {new Date().getFullYear()} Darpan
             </div>
             <div className="flex gap-8 font-mono text-[10px] tracking-widest text-[#8A8580] uppercase">
               <button onClick={() => setModalContent('privacy')} className="hover:text-[#C8A97E] transition-colors cursor-pointer font-bold">Privacy Policy</button>
@@ -709,7 +793,7 @@ const ChatPage = ({ messages, setMessages }) => {
             <div>
               <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#E8E4DC] leading-none mb-1">Sathi</h2>
               <p className="font-mono text-[9px] sm:text-[10px] tracking-widest text-[#A8C87E] uppercase flex items-center gap-2">
-                {isSpeaking ? "Speaking aloud..." : "AI Companion · Online"} 
+                {isSpeaking ? "Speaking aloud..." : "AI Companion Â· Online"} 
               </p>
             </div>
           </div>
@@ -847,18 +931,18 @@ const HomePage = ({ setPage, announcement }) => {
 
   // Mini-Chat States
   const [miniChatHistory, setMiniChatHistory] = useState([
-    { from: "sathi", text: "Hey — how was today? Feel free to speak freely." }
+    { from: "sathi", text: "Hey â€” how was today? Feel free to speak freely." }
   ]);
   const [miniChatInput, setMiniChatInput] = useState("");
   const [isMiniChatLoading, setIsMiniChatLoading] = useState(false);
   const miniChatEndRef = useRef(null);
 
   const RATING_LABELS = {
-    1: "Could be better 😔",
-    2: "Needs improvement 😐",
-    3: "Helpful & good 🙂",
-    4: "Really comforting! 😊",
-    5: "Life-changing / loved it! 🌟"
+    1: "Could be better ðŸ˜”",
+    2: "Needs improvement ðŸ˜",
+    3: "Helpful & good ðŸ™‚",
+    4: "Really comforting! ðŸ˜Š",
+    5: "Life-changing / loved it! ðŸŒŸ"
   };
 
   // Auto-scroll mini-chat
@@ -1021,7 +1105,7 @@ const HomePage = ({ setPage, announcement }) => {
               needs most.
             </h1>
             <p className="font-serif text-lg md:text-xl text-[#A09A95] font-light leading-relaxed max-w-md">
-              Darpan is an AI that listens without judgment, finds patterns in your emotions, and helps you finally understand what's going on inside — in your language, for your world.
+              Darpan is an AI that listens without judgment, finds patterns in your emotions, and helps you finally understand what's going on inside â€” in your language, for your world.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <button onClick={() => setPage("chat")} className="cursor-pointer px-8 py-4 bg-[#C8A97E] text-black font-mono text-xs tracking-widest uppercase font-medium hover:bg-white transition-colors flex items-center justify-center gap-2 group shadow-[0_0_40px_rgba(200,169,126,0.3)] rounded-lg">
@@ -2120,7 +2204,7 @@ const DiaryCalendar = ({ entries, selectedDate, setSelectedDate }) => {
             const hasEntry = !!currentEntry;
             const isSelected = selectedDate === formattedDate;
             
-            const displayContent = hasEntry ? (currentEntry.moodEmoji || '📝') : day;
+            const displayContent = hasEntry ? (currentEntry.moodEmoji || 'ðŸ“') : day;
 
             return (
               <button
@@ -2199,7 +2283,7 @@ const DiaryPage = ({ diaryEntries, setDiaryEntries }) => {
     if (!newEntry.trim() || !auth.currentUser) return;
     setIsSaving(true);
     
-    let moodEmoji = "📝"; 
+    let moodEmoji = "ðŸ“"; 
     
     try {
       const response = await fetch("https://dapan-api-secure.onrender.com/api/generate-emoji", {
@@ -2344,7 +2428,7 @@ const DiaryPage = ({ diaryEntries, setDiaryEntries }) => {
                     <div className="flex justify-between items-start mb-3 border-b border-white/5 pb-2.5">
                       <div className="flex items-center gap-3">
                         <span className="text-2xl bg-white/5 w-10 h-10 rounded-full flex items-center justify-center border border-white/10 group-hover:border-[#C8A97E]/40 transition-colors shadow-sm flex-shrink-0" title="AI Mood Analysis">
-                          {entry.moodEmoji || "📓"}
+                          {entry.moodEmoji || "ðŸ““"}
                         </span>
                         <div>
                           <div className="font-serif text-[#C8A97E] text-base font-bold leading-tight">{entry.date}</div>
@@ -2816,7 +2900,7 @@ const LandingPage = ({ setPage }) => {
                   title="Verify Google Safety Report"
                 >
                   <Shield className="w-3.5 h-3.5 text-[#A8C87E]/70 group-hover:text-[#A8C87E]" />
-                  <span className="font-mono text-[9px] uppercase tracking-widest">Google Safe <span className="opacity-60">🔗</span></span>
+                  <span className="font-mono text-[9px] uppercase tracking-widest">Google Safe <span className="opacity-60">ðŸ”—</span></span>
                 </a>
                 <div className="flex items-center gap-1.5 text-[#5A5550]">
                   <Check className="w-3.5 h-3.5 text-[#7EB8C8]/70" />
@@ -2947,7 +3031,7 @@ useEffect(() => {
     });
     setRealtimeNotifications(loadedNotifs);
   }, (error) => {
-    console.warn("⚠️ Notification indexed query failed (likely missing composite index), attempting fallback sort:", error?.message);
+    console.warn("âš ï¸ Notification indexed query failed (likely missing composite index), attempting fallback sort:", error?.message);
     try {
       const qFallback = query(
         collection(db, "notifications"),
@@ -2966,10 +3050,10 @@ useEffect(() => {
         });
         setRealtimeNotifications(loadedNotifs.slice(0, 10));
       }, (fbErr) => {
-        console.error("❌ Fallback notification query failed:", fbErr);
+        console.error("âŒ Fallback notification query failed:", fbErr);
       });
     } catch (e) {
-      console.error("❌ Error setting up fallback listener:", e);
+      console.error("âŒ Error setting up fallback listener:", e);
     }
   });
 
@@ -2992,18 +3076,33 @@ const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
       parts: [{ text: "Namaste! I am Sathi. I am here to listen, whether you want to talk about exams, stress, or just your day. You can type or use the microphone to speak to me in English, Hindi, or Hinglish. How are you feeling right now?" }]
     }
   ]);
-// 1. Service Worker Registration (Isse add karo)
+// Service Worker Registration — enables background push notifications
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/firebase-messaging-sw.js')
         .then((registration) => {
-          console.log('Service Worker registered successfully:', registration.scope);
+          console.log('✅ Service Worker registered:', registration.scope);
         })
         .catch((err) => {
-          console.error('Service Worker registration failed:', err);
+          console.error('❌ Service Worker registration failed:', err);
         });
     }
   }, []);
+
+  // Listen for notification-click navigation from the service worker
+  // When user taps a push notification, the SW sends a 'sw_navigate' event
+  useEffect(() => {
+    const handleSWNavigate = (e) => {
+      const page = e.detail?.page;
+      if (page && isLoggedIn) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setCurrentPage(page);
+      }
+    };
+    window.addEventListener('sw_navigate', handleSWNavigate);
+    return () => window.removeEventListener('sw_navigate', handleSWNavigate);
+  }, [isLoggedIn]);
+
   const requestNotificationPermission = async (user) => {
     try {
       // Only request if supported and not already denied
@@ -3018,7 +3117,7 @@ const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
       });
 
       if (currentToken) {
-        console.log("✅ FCM Token registered for this device:", currentToken.slice(0, 20) + "...");
+        console.log("âœ… FCM Token registered for this device:", currentToken.slice(0, 20) + "...");
         // Save as array so the user can receive notifications on ALL their devices/browsers
         // Cloud Functions read `fcmTokens` (plural) to send to all registered devices
         await setDoc(doc(db, "users", user.uid), {
@@ -3029,7 +3128,7 @@ const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
         }, { merge: true });
       }
     } catch (error) {
-      // Gracefully ignore — e.g., iframe restrictions, service worker not ready
+      // Gracefully ignore â€” e.g., iframe restrictions, service worker not ready
       console.warn("FCM token registration skipped:", error?.message || error);
     }
   };
@@ -3254,8 +3353,11 @@ const renderPage = () => {
           })}
         </nav>
       )}
+      {/* PWA Install Banner */}
+      <PWAInstallBanner />
 
       {isLoggedIn && currentPage !== "chat" && <Footer />}
     </div>
   );
 }
+

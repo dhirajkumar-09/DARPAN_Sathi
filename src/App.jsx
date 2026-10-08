@@ -3461,7 +3461,6 @@ const renderPage = () => {
           })}
         </nav>
       )}
-// ─── PWA Install Banner — "Add to Home Screen" like WhatsApp ───
       <PWAInstallBanner />
 
       {isLoggedIn && currentPage !== "chat" && <Footer />}

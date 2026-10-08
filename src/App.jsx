@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import { 
   MessageSquare, Sparkles, Brain, Shield, ArrowRight, Play, Check, LogOut, 
   Send, RefreshCw, Loader2, User, BarChart, Calendar, Lightbulb, TrendingUp,
@@ -134,10 +134,10 @@ const CustomCursor = ({ isMobile }) => {
   );
 };
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// PWA Install Banner â€” "Add to Home Screen" like WhatsApp
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// PWA Install Banner Ã¢â‚¬â€ "Add to Home Screen" like WhatsApp
 // Shows a native-style banner on Android Chrome browsers
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 const PWAInstallBanner = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showBanner, setShowBanner] = useState(false);
@@ -417,7 +417,7 @@ const Footer = () => {
             >
               <Shield className="w-4 h-4 text-[#A8C87E] group-hover:scale-110 transition-transform" />
               <span className="font-mono text-[10px] uppercase tracking-widest flex items-center gap-1">
-                Google Verified <span className="text-[8px] opacity-70">ðŸ”—</span>
+                Google Verified <span className="text-[8px] opacity-70">Ã°Å¸â€â€”</span>
               </span>
             </a>
             
@@ -433,7 +433,7 @@ const Footer = () => {
               DARP<span className="text-[#C8A97E]/40">AN</span>
             </div>
             <div className="font-mono text-[9px] md:text-[10px] tracking-widest text-[#5A5550] uppercase text-center">
-              Made with care for Indian Students Â· Â© {new Date().getFullYear()} Darpan
+              Made with care for Indian Students Ã‚Â· Ã‚Â© {new Date().getFullYear()} Darpan
             </div>
             <div className="flex gap-8 font-mono text-[10px] tracking-widest text-[#8A8580] uppercase">
               <button onClick={() => setModalContent('privacy')} className="hover:text-[#C8A97E] transition-colors cursor-pointer font-bold">Privacy Policy</button>
@@ -524,38 +524,79 @@ const AuthPage = ({ setPage, setIsLoggedIn }) => {
   );
 };
 
+// â”€â”€â”€ CRISIS KEYWORDS â€” detect if student needs urgent help â”€â”€â”€
+const CRISIS_KEYWORDS = [
+  'suicide', 'kill myself', 'end my life', 'want to die', 'self harm',
+  'hurt myself', 'khatam kar lun', 'mar jaun', 'marna chahta', 'nahi rehna',
+  'khud ko hurt', 'jeena nahi', 'zindagi nahi chahiye'
+];
+
+// â”€â”€â”€ MOOD DETECTION â€” from user text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+const detectMood = (text) => {
+  const t = text.toLowerCase();
+  if (/happy|khush|amazing|wonderful|great|excited|blessed|acha lag/.test(t)) return 'happy';
+  if (/anxious|anxiety|nervous|darr|ghabra|panic|worried|tension/.test(t)) return 'anxious';
+  if (/angry|gussa|frustrated|irritat|annoyed/.test(t)) return 'angry';
+  if (/sad|dukhi|lonely|akela|cry|ro|depressed|udaas|hurt|broken/.test(t)) return 'sad';
+  if (/stress|pressure|exam|overload|burden|thak|tired|exhaust/.test(t)) return 'stressed';
+  if (/grateful|thankful|shukriya|content|peaceful|calm|santi/.test(t)) return 'peaceful';
+  return 'neutral';
+};
+
+const MOOD_STYLES = {
+  happy:    { bg: 'from-amber-900/20 to-yellow-900/10',  dot: 'bg-yellow-400',  label: 'Feeling happy âœ¨' },
+  anxious:  { bg: 'from-purple-900/20 to-violet-900/10', dot: 'bg-purple-400',  label: 'Feeling anxious ðŸ˜°' },
+  angry:    { bg: 'from-red-900/20 to-orange-900/10',    dot: 'bg-red-400',     label: 'Feeling frustrated ðŸ˜¤' },
+  sad:      { bg: 'from-blue-900/20 to-indigo-900/10',   dot: 'bg-blue-400',    label: 'Feeling low ðŸ’™' },
+  stressed: { bg: 'from-orange-900/20 to-amber-900/10',  dot: 'bg-orange-400',  label: 'Feeling stressed ðŸ˜“' },
+  peaceful: { bg: 'from-green-900/20 to-teal-900/10',    dot: 'bg-green-400',   label: 'Feeling calm ðŸƒ' },
+  neutral:  { bg: 'from-[#0A0A0F] to-[#06060A]',         dot: 'bg-[#8A8580]',   label: 'Sathi is listening' },
+};
+
+// â”€â”€â”€ QUICK EMOTION PROMPTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+const QUICK_PROMPTS = [
+  { emoji: 'ðŸ˜“', label: 'Stressed',    text: 'I am feeling very stressed and overwhelmed right now.' },
+  { emoji: 'ðŸ˜°', label: 'Anxious',     text: 'I am feeling anxious and nervous. I cannot stop worrying.' },
+  { emoji: 'ðŸ˜¢', label: 'Lonely',      text: 'I am feeling very lonely and nobody understands me.' },
+  { emoji: 'ðŸ˜¤', label: 'Angry',       text: 'I am feeling really angry and frustrated right now.' },
+  { emoji: 'ðŸ˜´', label: 'Exhausted',   text: 'I am completely exhausted, physically and mentally.' },
+  { emoji: 'ðŸ’”', label: 'Heartbroken', text: 'I am heartbroken and sad. Things feel hopeless.' },
+  { emoji: 'ðŸ¤¯', label: 'Overwhelmed', text: 'Everything feels too much right now. I am overwhelmed.' },
+  { emoji: 'âœ¨', label: 'Good today',  text: 'I am feeling okay today! Just want to talk and share my day.' },
+];
+
 const ChatPage = ({ messages, setMessages }) => {
-  const [inputValue, setInputValue] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
+  const [inputValue, setInputValue]           = useState("");
+  const [isTyping, setIsTyping]               = useState(false);
+  const [isRecording, setIsRecording]         = useState(false);
   const [isAudioOutputEnabled, setIsAudioOutputEnabled] = useState(true);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  
-  const messagesEndRef = useRef(null);
-  const recognitionRef = useRef(null);
-  const audioSourceRef = useRef(null);
-  const textareaRef = useRef(null);
+  const [isSpeaking, setIsSpeaking]           = useState(false);
+  const [currentMood, setCurrentMood]         = useState('neutral');
+  const [showCrisisPanel, setShowCrisisPanel] = useState(false);
+  const [showQuickPrompts, setShowQuickPrompts] = useState(true);
+
+  const messagesEndRef  = useRef(null);
+  const recognitionRef  = useRef(null);
+  const audioSourceRef  = useRef(null);
+  const textareaRef     = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping]);
+  useEffect(() => { scrollToBottom(); }, [messages, isTyping]);
 
-  // Clean up any ongoing TTS / STT when component unmounts
+  // Hide quick prompts once first user message is sent
+  useEffect(() => {
+    if (messages.length > 1) setShowQuickPrompts(false);
+  }, [messages.length]);
+
+  // Clean up TTS / STT on unmount
   useEffect(() => {
     return () => {
-      if (recognitionRef.current) {
-        try { recognitionRef.current.stop(); } catch (e) {}
-      }
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-      if (audioSourceRef.current) {
-        try { audioSourceRef.current.stop(); } catch (e) {}
-      }
+      if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch (e) {} }
+      if (window.speechSynthesis) { window.speechSynthesis.cancel(); }
+      if (audioSourceRef.current) { try { audioSourceRef.current.stop(); } catch (e) {} }
     };
   }, []);
 
@@ -669,8 +710,9 @@ const ChatPage = ({ messages, setMessages }) => {
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || isTyping) return;      
+  const handleSendMessage = async (overrideText = null) => {
+    const currentText = (overrideText || inputValue).trim();
+    if (!currentText || isTyping) return;
 
     // Stop recording if active
     if (isRecording && recognitionRef.current) {
@@ -678,9 +720,16 @@ const ChatPage = ({ messages, setMessages }) => {
       setIsRecording(false);
     }
 
-    const currentText  = inputValue.trim();
-    const userMessage  = { role: "user", parts: [{ text: currentText }] };
-    const newMessages  = [...messages, userMessage];
+    // â”€â”€ Mood detection â€” update dynamic background â”€â”€
+    const detectedMood = detectMood(currentText);
+    setCurrentMood(detectedMood);
+
+    // â”€â”€ Crisis detection â€” show helpline panel â”€â”€
+    const isCrisis = CRISIS_KEYWORDS.some(kw => currentText.toLowerCase().includes(kw));
+    if (isCrisis) setShowCrisisPanel(true);
+
+    const userMessage = { role: "user", parts: [{ text: currentText }], ts: Date.now() };
+    const newMessages = [...messages, userMessage];
 
     setMessages(newMessages);
     setInputValue("");
@@ -689,10 +738,9 @@ const ChatPage = ({ messages, setMessages }) => {
     if (auth.currentUser) {
       try {
         await addDoc(collection(db, "chats"), {
-          text:      currentText,
-          role:      "user",
-          userId:    auth.currentUser.uid,
-          userName:  auth.currentUser.displayName || "Unknown User",
+          text: currentText, role: "user",
+          userId: auth.currentUser.uid,
+          userName: auth.currentUser.displayName || "Unknown User",
           userEmail: auth.currentUser.email || "No Email",
           createdAt: serverTimestamp(),
         });
@@ -709,44 +757,36 @@ const ChatPage = ({ messages, setMessages }) => {
           formattedMessages.push({ role: msg.role, parts: [{ text: msg.parts[0].text }] });
         }
       }
-
       let finalApiMessages = formattedMessages.slice(-6);
-      if (finalApiMessages.length > 0 && finalApiMessages[0].role === "model") {
-        finalApiMessages.shift();
-      }
+      if (finalApiMessages.length > 0 && finalApiMessages[0].role === "model") finalApiMessages.shift();
 
       const response = await fetch("https://dapan-api-secure.onrender.com/api/chat", {
-        method:  "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: finalApiMessages }) 
+        body: JSON.stringify({ messages: finalApiMessages })
       });
-      
       const data = await response.json();
 
       if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
         const botReplyText = data.candidates[0].content.parts[0].text;
-        setMessages(prev => [...prev, { role: "model", parts: [{ text: botReplyText }] }]);
-        speakText(botReplyText);
-
+        setMessages(prev => [...prev, { role: "model", parts: [{ text: botReplyText }], ts: Date.now() }]);
+        if (isAudioOutputEnabled) speakText(botReplyText);
         if (auth.currentUser) {
           try {
             await addDoc(collection(db, "chats"), {
-              text:      botReplyText,
-              role:      "model",
-              userId:    auth.currentUser.uid,
-              createdAt: serverTimestamp(),
+              text: botReplyText, role: "model",
+              userId: auth.currentUser.uid, createdAt: serverTimestamp(),
             });
           } catch (err) { console.error("Error saving AI message:", err); }
         }
       } else {
-        console.error("Gemini rejected the payload:", data);
-        const fallback = "There seems to be a connection issue with the server. Could you please share that again?";
-        setMessages(prev => [...prev, { role: "model", parts: [{ text: fallback }] }]);
-        speakText(fallback);
+        const fallback = "There seems to be a connection issue. Could you please share that again?";
+        setMessages(prev => [...prev, { role: "model", parts: [{ text: fallback }], ts: Date.now() }]);
+        if (isAudioOutputEnabled) speakText(fallback);
       }
     } catch (err) {
       console.error("Gemini error:", err);
-      setMessages(prev => [...prev, { role: "model", parts: [{ text: "Unable to reach Sathi right now. The server might be waking up; please try again in a moment." }] }]);
+      setMessages(prev => [...prev, { role: "model", parts: [{ text: "Unable to reach Sathi right now. Please try again in a moment." }], ts: Date.now() }]);
     } finally {
       setIsTyping(false);
     }
@@ -774,149 +814,224 @@ const ChatPage = ({ messages, setMessages }) => {
     setIsSpeaking(false);
   };
 
+  const moodStyle = MOOD_STYLES[currentMood] || MOOD_STYLES.neutral;
+
   return (
-    <div className="animate-fade-in pt-24 pb-6 px-3 sm:px-6 md:px-12 lg:px-20 min-h-screen flex flex-col relative overflow-hidden">
-       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-30">
-        <div className="absolute rounded-full blur-[100px] w-[500px] h-[500px] -left-[10%] -top-[10%] bg-[#C8A97E]/20" />
-        <div className="absolute rounded-full blur-[100px] w-[400px] h-[400px] right-[-5%] top-[40%] bg-[#7EB8C8]/20" />
+    <div className={`animate-fade-in pt-24 pb-6 px-3 sm:px-6 md:px-12 lg:px-20 min-h-screen flex flex-col relative overflow-hidden transition-all duration-1000 bg-gradient-to-br ${moodStyle.bg}`}>
+      {/* Dynamic ambient orbs â€” shift color with mood */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-40">
+        <div className={`absolute rounded-full blur-[120px] w-[500px] h-[500px] -left-[10%] -top-[10%] transition-all duration-1000 ${
+          currentMood === 'sad' ? 'bg-blue-600/20' : currentMood === 'anxious' ? 'bg-purple-600/20' :
+          currentMood === 'angry' ? 'bg-red-600/20' : currentMood === 'stressed' ? 'bg-orange-600/20' :
+          currentMood === 'happy' ? 'bg-yellow-500/20' : currentMood === 'peaceful' ? 'bg-green-600/20' : 'bg-[#C8A97E]/15'
+        }`} />
+        <div className="absolute rounded-full blur-[100px] w-[400px] h-[400px] right-[-5%] top-[40%] bg-[#7EB8C8]/10" />
       </div>
 
+      {/* Crisis Helpline Panel */}
+      {showCrisisPanel && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#0A0A0F] border border-red-500/40 rounded-2xl p-6 max-w-sm w-full shadow-[0_0_60px_rgba(239,68,68,0.2)]">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center text-xl">ðŸ†˜</div>
+              <div>
+                <p className="font-serif font-bold text-[#E8E4DC] text-lg">Sathi is here with you</p>
+                <p className="font-mono text-[10px] text-red-400 tracking-widest uppercase">You are not alone</p>
+              </div>
+            </div>
+            <p className="font-serif text-[#C4C0BB] text-sm leading-relaxed mb-5">
+              It sounds like you're going through something very heavy. Please know you matter deeply. If you're in crisis, please reach out to these helplines immediately:
+            </p>
+            <div className="space-y-2 mb-5">
+              {[
+                { name: 'iCall (TISS)', number: '9152987821', desc: 'Monâ€“Sat, 8amâ€“10pm' },
+                { name: 'Vandrevala Foundation', number: '1860-2662-345', desc: '24/7 Free helpline' },
+                { name: 'iMind (NIMHANS)', number: '080-46110007', desc: 'Free counseling' },
+              ].map(h => (
+                <a key={h.name} href={`tel:${h.number.replace(/-/g,'')}`}
+                  className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 hover:border-red-400/40 hover:bg-red-500/5 transition-all group cursor-pointer">
+                  <div>
+                    <p className="font-mono text-xs font-bold text-[#E8E4DC] group-hover:text-red-300 transition-colors">{h.name}</p>
+                    <p className="font-mono text-[10px] text-[#8A8580]">{h.desc}</p>
+                  </div>
+                  <p className="font-mono text-sm font-bold text-[#C8A97E] group-hover:text-red-300 transition-colors">{h.number}</p>
+                </a>
+              ))}
+            </div>
+            <button onClick={() => setShowCrisisPanel(false)}
+              className="w-full py-3 font-mono text-xs tracking-widest uppercase font-bold bg-[#C8A97E]/15 border border-[#C8A97E]/30 text-[#C8A97E] hover:bg-[#C8A97E]/25 rounded-xl transition-all cursor-pointer">
+              I'm okay, continue with Sathi
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex-grow w-full max-w-4xl mx-auto flex flex-col z-10 h-[calc(100dvh-130px)] min-h-[500px]">
-        {/* Header */}
-        <div className="bg-[#0A0A0F]/90 backdrop-blur-xl border border-[#C8A97E]/20 rounded-t-2xl p-4 sm:p-6 flex justify-between items-center shadow-lg">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-[#C8A97E] to-[#8A724E] flex items-center justify-center shadow-inner relative overflow-hidden shrink-0">
-              <span className="font-serif text-xl sm:text-2xl font-bold text-black leading-none pt-0.5 relative z-10">S</span>
-              {isSpeaking && <div className="absolute bottom-0 left-0 w-full bg-black/25 h-full animate-pulse z-0 rounded-full" />}
-              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 border-2 border-[#0A0A0F] rounded-full z-20" />
+
+        {/* â”€â”€ HEADER â”€â”€ */}
+        <div className="bg-[#0A0A0F]/90 backdrop-blur-xl border border-[#C8A97E]/20 rounded-t-2xl p-4 sm:p-5 flex justify-between items-center shadow-lg">
+          <div className="flex items-center gap-3">
+            {/* Sathi avatar â€” pulses when speaking */}
+            <div className="relative w-10 h-10 sm:w-12 sm:h-12 shrink-0">
+              <div className={`w-full h-full rounded-full bg-gradient-to-br from-[#C8A97E] to-[#8A724E] flex items-center justify-center shadow-inner ${isSpeaking ? 'ring-2 ring-[#C8A97E]/60 ring-offset-2 ring-offset-[#0A0A0F] animate-pulse' : ''}`}>
+                <span className="font-serif text-xl sm:text-2xl font-bold text-black leading-none pt-0.5">S</span>
+              </div>
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-[#0A0A0F] rounded-full" />
             </div>
             <div>
-              <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#E8E4DC] leading-none mb-1">Sathi</h2>
-              <p className="font-mono text-[9px] sm:text-[10px] tracking-widest text-[#A8C87E] uppercase flex items-center gap-2">
-                {isSpeaking ? "Speaking aloud..." : "AI Companion Â· Online"} 
-              </p>
+              <h2 className="font-serif text-lg sm:text-xl font-bold text-[#E8E4DC] leading-none">Sathi</h2>
+              {/* Mood indicator badge */}
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className={`w-1.5 h-1.5 rounded-full ${moodStyle.dot} transition-colors duration-700`} />
+                <p className="font-mono text-[9px] tracking-widest uppercase transition-all duration-700"
+                  style={{ color: currentMood === 'neutral' ? '#8A8580' : currentMood === 'happy' ? '#fbbf24' : currentMood === 'sad' ? '#60a5fa' : currentMood === 'stressed' ? '#fb923c' : currentMood === 'anxious' ? '#a78bfa' : currentMood === 'angry' ? '#f87171' : '#4ade80' }}>
+                  {isSpeaking ? 'Speakingâ€¦' : moodStyle.label}
+                </p>
+              </div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
-            <button 
-              type="button"
+            {/* Voice toggle */}
+            <button type="button"
               onClick={() => {
-                  const newState = !isAudioOutputEnabled;
-                  setIsAudioOutputEnabled(newState);
-                  if (!newState && window.speechSynthesis) {
-                      window.speechSynthesis.cancel();
-                  }
-                  if (!newState && audioSourceRef.current) {
-                      try { audioSourceRef.current.stop(); } catch(e) {}
-                  }
-                  if (!newState) {
-                      setIsSpeaking(false);
-                  }
+                const ns = !isAudioOutputEnabled;
+                setIsAudioOutputEnabled(ns);
+                if (!ns && window.speechSynthesis) window.speechSynthesis.cancel();
+                if (!ns && audioSourceRef.current) { try { audioSourceRef.current.stop(); } catch(e) {} }
+                if (!ns) setIsSpeaking(false);
               }}
               className={`font-mono text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-all cursor-pointer ${
-                  isAudioOutputEnabled 
-                  ? "bg-[#C8A97E]/10 border-[#C8A97E]/30 text-[#C8A97E] hover:bg-[#C8A97E]/20" 
-                  : "bg-white/5 border-white/10 text-[#8A8580] hover:bg-white/10"
-              }`}
-              title={isAudioOutputEnabled ? "Mute Sathi voice" : "Unmute Sathi voice"}
-            >
+                isAudioOutputEnabled ? 'bg-[#C8A97E]/10 border-[#C8A97E]/30 text-[#C8A97E] hover:bg-[#C8A97E]/20' : 'bg-white/5 border-white/10 text-[#8A8580] hover:bg-white/10'
+              }`} title={isAudioOutputEnabled ? 'Mute voice' : 'Unmute voice'}>
               {isAudioOutputEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">Voice Out</span>
+              <span className="hidden sm:inline">Voice</span>
             </button>
-            <button 
-              type="button"
-              onClick={clearChat} 
-              className="text-[#8A8580] hover:text-[#C8A97E] transition-colors p-2 rounded-full hover:bg-white/5 cursor-pointer ml-1" 
-              title="Reset Conversation"
-            >
+            {/* Reset */}
+            <button type="button" onClick={() => {
+                setMessages([{ role: 'model', parts: [{ text: "Namaste! Fresh start. How are you feeling right now?" }], ts: Date.now() }]);
+                setCurrentMood('neutral');
+                setShowCrisisPanel(false);
+                setShowQuickPrompts(true);
+                if (window.speechSynthesis) window.speechSynthesis.cancel();
+                if (audioSourceRef.current) { try { audioSourceRef.current.stop(); } catch(e) {} }
+                setIsSpeaking(false);
+              }}
+              className="text-[#8A8580] hover:text-[#C8A97E] transition-colors p-2 rounded-full hover:bg-white/5 cursor-pointer" title="Reset conversation">
               <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
 
-        {/* Messages Stream */}
-        <div className="flex-grow bg-[#06060A]/70 backdrop-blur-md border-x border-[#C8A97E]/20 p-4 sm:p-6 overflow-y-auto custom-scrollbar flex flex-col gap-4 sm:gap-6">
-          {messages.map((msg, index) => (
-            <div key={index} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}>
-              {msg.role === "model" && (
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center mr-2 sm:mr-3 mt-auto shrink-0 shadow-sm relative overflow-hidden">
-                  <span className="font-serif text-xs sm:text-sm font-bold text-[#C8A97E] relative z-10">S</span>
-                  {index === messages.length - 1 && isSpeaking && <div className="absolute bottom-0 w-full bg-[#C8A97E]/30 h-full animate-pulse z-0" />}
-                </div>
-              )}
-              
-              <div className={`max-w-[85%] sm:max-w-[75%] p-3.5 sm:p-4 text-[14px] sm:text-[15px] font-serif leading-relaxed shadow-sm ${
-                msg.role === "user" 
-                  ? "bg-gradient-to-br from-[#C8A97E]/15 to-[#8A724E]/20 border border-[#C8A97E]/40 rounded-2xl rounded-br-sm text-[#E8E4DC]" 
-                  : "bg-white/[0.04] border border-white/10 rounded-2xl rounded-bl-sm text-[#C4C0BB]"
-              }`}>
-                <span dangerouslySetInnerHTML={{ __html: formatMessageText(msg.parts[0]?.text) }} />
-              </div>
+        {/* â”€â”€ MESSAGES â”€â”€ */}
+        <div className="flex-grow bg-[#06060A]/60 backdrop-blur-md border-x border-[#C8A97E]/15 p-4 sm:p-5 overflow-y-auto custom-scrollbar flex flex-col gap-4">
 
-              {msg.role === "user" && (
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#1A1A24] border border-white/10 flex items-center justify-center ml-2 sm:ml-3 mt-auto shrink-0">
-                  <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
-                </div>
-              )}
+          {/* Quick Emotion Prompts â€” shown only before first message */}
+          {showQuickPrompts && (
+            <div className="animate-fade-in mb-2">
+              <p className="font-mono text-[10px] tracking-widest text-[#8A8580] uppercase text-center mb-3">How are you feeling right now?</p>
+              <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                {QUICK_PROMPTS.map(p => (
+                  <button key={p.label} onClick={() => { setInputValue(p.text); handleSendMessage(p.text); }}
+                    className="flex flex-col items-center gap-1 p-2 rounded-xl bg-white/[0.04] border border-white/10 hover:border-[#C8A97E]/40 hover:bg-[#C8A97E]/5 transition-all cursor-pointer group">
+                    <span className="text-xl group-hover:scale-110 transition-transform">{p.emoji}</span>
+                    <span className="font-mono text-[9px] text-[#8A8580] group-hover:text-[#C8A97E] transition-colors tracking-wide">{p.label}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 h-px bg-gradient-to-r from-transparent via-[#C8A97E]/20 to-transparent" />
             </div>
-          ))}
-          
+          )}
+
+          {messages.map((msg, index) => {
+            const isUser  = msg.role === 'user';
+            const isLast  = index === messages.length - 1;
+            const time    = msg.ts ? new Date(msg.ts).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
+            return (
+              <div key={index} className={`flex ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in`}>
+                {/* Sathi avatar */}
+                {!isUser && (
+                  <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#141419] border flex items-center justify-center mr-2 mt-auto shrink-0 relative overflow-hidden transition-all duration-500 ${isLast && isSpeaking ? 'border-[#C8A97E]/70 shadow-[0_0_12px_rgba(200,169,126,0.4)]' : 'border-[#C8A97E]/25'}`}>
+                    <span className="font-serif text-xs font-bold text-[#C8A97E] relative z-10">S</span>
+                    {isLast && isSpeaking && <div className="absolute inset-0 bg-[#C8A97E]/15 animate-pulse" />}
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-1 max-w-[85%] sm:max-w-[75%]">
+                  <div className={`p-3.5 sm:p-4 text-[14px] sm:text-[15px] font-serif leading-relaxed shadow-sm ${
+                    isUser
+                      ? 'bg-gradient-to-br from-[#C8A97E]/15 to-[#8A724E]/20 border border-[#C8A97E]/40 rounded-2xl rounded-br-sm text-[#E8E4DC]'
+                      : 'bg-white/[0.04] border border-white/10 rounded-2xl rounded-bl-sm text-[#C4C0BB]'
+                  }`}>
+                    <span dangerouslySetInnerHTML={{ __html: formatMessageText(msg.parts[0]?.text) }} />
+                  </div>
+                  {/* Timestamp */}
+                  {time && <p className={`font-mono text-[9px] text-[#5A5550] ${isUser ? 'text-right pr-1' : 'pl-1'}`}>{time}</p>}
+                </div>
+
+                {/* User avatar */}
+                {isUser && (
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#1A1A24] border border-white/10 flex items-center justify-center ml-2 mt-auto shrink-0">
+                    <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#8A8580]" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Sathi typing indicator */}
           {isTyping && (
             <div className="flex justify-start animate-fade-in">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center mr-2 sm:mr-3 mt-auto shrink-0 shadow-sm">
-                <span className="font-serif text-xs sm:text-sm font-bold text-[#C8A97E]">S</span>
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center mr-2 mt-auto shrink-0">
+                <span className="font-serif text-xs font-bold text-[#C8A97E]">S</span>
               </div>
-              <div className="bg-white/5 border border-white/10 rounded-2xl rounded-bl-sm p-4 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#C8A97E]/50 animate-pulse" />
-                <div className="w-2 h-2 rounded-full bg-[#C8A97E]/50 animate-pulse delay-150" />
-                <div className="w-2 h-2 rounded-full bg-[#C8A97E]/50 animate-pulse delay-300" />
+              <div className="bg-white/5 border border-white/10 rounded-2xl rounded-bl-sm px-5 py-4 flex items-center gap-1.5">
+                {[0, 150, 300].map(delay => (
+                  <div key={delay} className="w-2 h-2 rounded-full bg-[#C8A97E]/60"
+                    style={{ animation: `pulse 1.2s ease-in-out ${delay}ms infinite` }} />
+                ))}
               </div>
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Bar */}
-        <div className="bg-[#0A0A0F]/90 backdrop-blur-xl border border-[#C8A97E]/20 rounded-b-2xl p-3 sm:p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+        {/* â”€â”€ INPUT BAR â”€â”€ */}
+        <div className="bg-[#0A0A0F]/90 backdrop-blur-xl border border-[#C8A97E]/20 rounded-b-2xl p-3 sm:p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
           <div className="relative flex items-center gap-2">
-            <button
-              type="button"
-              onClick={toggleRecording}
-              className={`p-3 sm:p-3.5 rounded-xl border transition-all duration-300 cursor-pointer shadow-inner shrink-0 ${
-                isRecording 
-                  ? "bg-red-500/20 border-red-500/50 text-red-400 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.4)]" 
-                  : "bg-[#141419] border-white/10 text-[#C8A97E] hover:bg-white/5 hover:border-[#C8A97E]/30"
-              }`}
-              title={isRecording ? "Stop listening" : "Click to speak"}
-              aria-label={isRecording ? "Stop voice input" : "Start voice input"}
-            >
+            {/* Mic button */}
+            <button type="button" onClick={toggleRecording}
+              className={`p-3 sm:p-3.5 rounded-xl border transition-all duration-300 cursor-pointer shrink-0 ${
+                isRecording
+                  ? 'bg-red-500/20 border-red-500/50 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-pulse'
+                  : 'bg-[#141419] border-white/10 text-[#C8A97E] hover:bg-white/5 hover:border-[#C8A97E]/30'
+              }`} title={isRecording ? 'Stop' : 'Speak'}>
               {isRecording ? <Mic className="w-5 h-5 animate-bounce" /> : <MicOff className="w-5 h-5" />}
             </button>
-            <textarea
-              ref={textareaRef}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder={isRecording ? "Listening carefully... speak now" : "Type your thoughts in Hindi or English, or use the mic..."}
-              className={`flex-grow bg-[#141419] border rounded-xl py-3.5 pl-3.5 pr-12 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-[15px] sm:text-[16px] focus:outline-none transition-colors resize-none shadow-inner custom-scrollbar ${
-                  isRecording ? "border-[#C8A97E]/80 border-dashed bg-[#C8A97E]/5" : "border-white/10 focus:border-[#C8A97E]/50"
-              }`}
-              rows={1}
-              style={{ minHeight: '52px', maxHeight: '120px' }}
-            />
-            
-            <button 
-              type="button"
-              onClick={handleSendMessage} 
-              disabled={isTyping || !inputValue.trim()} 
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-[#C8A97E] text-black p-2.5 rounded-lg hover:bg-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-md"
-              title="Send message"
-              aria-label="Send message"
-            >
+
+            {/* Text input */}
+            <textarea ref={textareaRef} value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
+              placeholder={isRecording ? 'Listeningâ€¦ speak now' : 'Type in Hindi, English or Hinglishâ€¦'}
+              className={`flex-grow bg-[#141419] border rounded-xl py-3.5 pl-4 pr-12 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-[15px] focus:outline-none transition-all resize-none custom-scrollbar ${
+                isRecording ? 'border-[#C8A97E]/80 border-dashed bg-[#C8A97E]/5' : 'border-white/10 focus:border-[#C8A97E]/50'
+              }`} rows={1} style={{ minHeight: '52px', maxHeight: '120px' }} />
+
+            {/* Send button */}
+            <button type="button" onClick={() => handleSendMessage()} disabled={isTyping || !inputValue.trim()}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-[#C8A97E] text-black p-2.5 rounded-lg hover:bg-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-md">
               {isTyping ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <Send className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
           </div>
+
+          {/* Quick re-prompt hint after first message */}
+          {!showQuickPrompts && messages.length > 2 && (
+            <button onClick={() => setShowQuickPrompts(true)}
+              className="mt-2 w-full font-mono text-[9px] tracking-widest uppercase text-[#5A5550] hover:text-[#C8A97E] transition-colors cursor-pointer text-center">
+              â†‘ Show emotion shortcuts
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -931,18 +1046,18 @@ const HomePage = ({ setPage, announcement }) => {
 
   // Mini-Chat States
   const [miniChatHistory, setMiniChatHistory] = useState([
-    { from: "sathi", text: "Hey â€” how was today? Feel free to speak freely." }
+    { from: "sathi", text: "Hey Ã¢â‚¬â€ how was today? Feel free to speak freely." }
   ]);
   const [miniChatInput, setMiniChatInput] = useState("");
   const [isMiniChatLoading, setIsMiniChatLoading] = useState(false);
   const miniChatEndRef = useRef(null);
 
   const RATING_LABELS = {
-    1: "Could be better ðŸ˜”",
-    2: "Needs improvement ðŸ˜",
-    3: "Helpful & good ðŸ™‚",
-    4: "Really comforting! ðŸ˜Š",
-    5: "Life-changing / loved it! ðŸŒŸ"
+    1: "Could be better Ã°Å¸Ëœâ€",
+    2: "Needs improvement Ã°Å¸ËœÂ",
+    3: "Helpful & good Ã°Å¸â„¢â€š",
+    4: "Really comforting! Ã°Å¸ËœÅ ",
+    5: "Life-changing / loved it! Ã°Å¸Å’Å¸"
   };
 
   // Auto-scroll mini-chat
@@ -1105,7 +1220,7 @@ const HomePage = ({ setPage, announcement }) => {
               needs most.
             </h1>
             <p className="font-serif text-lg md:text-xl text-[#A09A95] font-light leading-relaxed max-w-md">
-              Darpan is an AI that listens without judgment, finds patterns in your emotions, and helps you finally understand what's going on inside â€” in your language, for your world.
+              Darpan is an AI that listens without judgment, finds patterns in your emotions, and helps you finally understand what's going on inside Ã¢â‚¬â€ in your language, for your world.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <button onClick={() => setPage("chat")} className="cursor-pointer px-8 py-4 bg-[#C8A97E] text-black font-mono text-xs tracking-widest uppercase font-medium hover:bg-white transition-colors flex items-center justify-center gap-2 group shadow-[0_0_40px_rgba(200,169,126,0.3)] rounded-lg">
@@ -2204,7 +2319,7 @@ const DiaryCalendar = ({ entries, selectedDate, setSelectedDate }) => {
             const hasEntry = !!currentEntry;
             const isSelected = selectedDate === formattedDate;
             
-            const displayContent = hasEntry ? (currentEntry.moodEmoji || 'ðŸ“') : day;
+            const displayContent = hasEntry ? (currentEntry.moodEmoji || 'Ã°Å¸â€œÂ') : day;
 
             return (
               <button
@@ -2283,7 +2398,7 @@ const DiaryPage = ({ diaryEntries, setDiaryEntries }) => {
     if (!newEntry.trim() || !auth.currentUser) return;
     setIsSaving(true);
     
-    let moodEmoji = "ðŸ“"; 
+    let moodEmoji = "Ã°Å¸â€œÂ"; 
     
     try {
       const response = await fetch("https://dapan-api-secure.onrender.com/api/generate-emoji", {
@@ -2428,7 +2543,7 @@ const DiaryPage = ({ diaryEntries, setDiaryEntries }) => {
                     <div className="flex justify-between items-start mb-3 border-b border-white/5 pb-2.5">
                       <div className="flex items-center gap-3">
                         <span className="text-2xl bg-white/5 w-10 h-10 rounded-full flex items-center justify-center border border-white/10 group-hover:border-[#C8A97E]/40 transition-colors shadow-sm flex-shrink-0" title="AI Mood Analysis">
-                          {entry.moodEmoji || "ðŸ““"}
+                          {entry.moodEmoji || "Ã°Å¸â€œâ€œ"}
                         </span>
                         <div>
                           <div className="font-serif text-[#C8A97E] text-base font-bold leading-tight">{entry.date}</div>
@@ -2900,7 +3015,7 @@ const LandingPage = ({ setPage }) => {
                   title="Verify Google Safety Report"
                 >
                   <Shield className="w-3.5 h-3.5 text-[#A8C87E]/70 group-hover:text-[#A8C87E]" />
-                  <span className="font-mono text-[9px] uppercase tracking-widest">Google Safe <span className="opacity-60">ðŸ”—</span></span>
+                  <span className="font-mono text-[9px] uppercase tracking-widest">Google Safe <span className="opacity-60">Ã°Å¸â€â€”</span></span>
                 </a>
                 <div className="flex items-center gap-1.5 text-[#5A5550]">
                   <Check className="w-3.5 h-3.5 text-[#7EB8C8]/70" />
@@ -3031,7 +3146,7 @@ useEffect(() => {
     });
     setRealtimeNotifications(loadedNotifs);
   }, (error) => {
-    console.warn("âš ï¸ Notification indexed query failed (likely missing composite index), attempting fallback sort:", error?.message);
+    console.warn("Ã¢Å¡Â Ã¯Â¸Â Notification indexed query failed (likely missing composite index), attempting fallback sort:", error?.message);
     try {
       const qFallback = query(
         collection(db, "notifications"),
@@ -3050,10 +3165,10 @@ useEffect(() => {
         });
         setRealtimeNotifications(loadedNotifs.slice(0, 10));
       }, (fbErr) => {
-        console.error("âŒ Fallback notification query failed:", fbErr);
+        console.error("Ã¢ÂÅ’ Fallback notification query failed:", fbErr);
       });
     } catch (e) {
-      console.error("âŒ Error setting up fallback listener:", e);
+      console.error("Ã¢ÂÅ’ Error setting up fallback listener:", e);
     }
   });
 
@@ -3076,15 +3191,15 @@ const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
       parts: [{ text: "Namaste! I am Sathi. I am here to listen, whether you want to talk about exams, stress, or just your day. You can type or use the microphone to speak to me in English, Hindi, or Hinglish. How are you feeling right now?" }]
     }
   ]);
-// Service Worker Registration — enables background push notifications
+// Service Worker Registration â€” enables background push notifications
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/firebase-messaging-sw.js')
         .then((registration) => {
-          console.log('✅ Service Worker registered:', registration.scope);
+          console.log('âœ… Service Worker registered:', registration.scope);
         })
         .catch((err) => {
-          console.error('❌ Service Worker registration failed:', err);
+          console.error('âŒ Service Worker registration failed:', err);
         });
     }
   }, []);
@@ -3117,7 +3232,7 @@ const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
       });
 
       if (currentToken) {
-        console.log("âœ… FCM Token registered for this device:", currentToken.slice(0, 20) + "...");
+        console.log("Ã¢Å“â€¦ FCM Token registered for this device:", currentToken.slice(0, 20) + "...");
         // Save as array so the user can receive notifications on ALL their devices/browsers
         // Cloud Functions read `fcmTokens` (plural) to send to all registered devices
         await setDoc(doc(db, "users", user.uid), {
@@ -3128,7 +3243,7 @@ const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
         }, { merge: true });
       }
     } catch (error) {
-      // Gracefully ignore â€” e.g., iframe restrictions, service worker not ready
+      // Gracefully ignore Ã¢â‚¬â€ e.g., iframe restrictions, service worker not ready
       console.warn("FCM token registration skipped:", error?.message || error);
     }
   };

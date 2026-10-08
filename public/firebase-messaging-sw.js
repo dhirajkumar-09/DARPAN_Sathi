@@ -1,9 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 // DARPAN Firebase Messaging Service Worker
-// Handles background push notifications exactly like WhatsApp:
-//   - Works when browser tab is closed
-//   - Works when browser is minimized
-//   - Works when phone screen is off (Android PWA)
+// Handles background push notifications when website is CLOSED / MINIMIZED
 // ═══════════════════════════════════════════════════════════════
 
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
@@ -20,7 +17,7 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// ── Map notification type → deep link URL ──────────────────────
+// Map notification type → deep link URL
 function getLink(data) {
   const base = 'https://darpan-sathi.vercel.app';
   const map = {
@@ -29,15 +26,14 @@ function getLink(data) {
     comment:   base + '/?page=stories',
     reply:     base + '/?page=stories',
   };
-  return map[data?.type] || base;
+  return map[data?.type] || (data?.url || base + '/?page=stories');
 }
 
-// ── Show a rich notification (called from both FCM and raw push) ─
+// Show native OS notification (Windows toast / Android push)
 function showRichNotification(title, body, data = {}) {
   const link = getLink(data);
   const type = data.type || 'general';
 
-  // Emoji prefix for different notification types
   const prefixes = {
     new_story: '📖',
     reaction:  '❤️',
@@ -46,92 +42,90 @@ function showRichNotification(title, body, data = {}) {
     broadcast: '📢',
   };
   const emoji = prefixes[type] || '🔔';
+  const safeTitle = (title || 'DARPAN').startsWith(emoji) ? title : `${emoji} ${title || 'DARPAN'}`;
 
-  return self.registration.showNotification(`${emoji} ${title}`, {
-    body: body,
-    icon:  '/icon-192.png',
-    badge: '/icon-192.png',      // Small icon shown in Android status bar
-    image: '/icon-512.png',      // Large preview image in expanded notification
-    vibrate: [100, 50, 100, 50, 200],   // WhatsApp-style vibration pattern
-    sound: '/notification.mp3',  // (optional, most browsers ignore this)
-    tag: type,                   // Replaces old notification of same type (no spam)
-    renotify: true,              // Still vibrates even if replacing same tag
-    requireInteraction: false,   // Auto-dismiss after a few seconds
+  return self.registration.showNotification(safeTitle, {
+    body: body || 'You have a new update on DARPAN',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    vibrate: [150, 50, 150],
+    tag: `${type}_${Date.now()}`,
+    renotify: true,
+    requireInteraction: false,
     silent: false,
     timestamp: Date.now(),
     data: { url: link, type, ...data },
     actions: [
-      { action: 'open',    title: '👁 View'   },
-      { action: 'dismiss', title: '✖ Dismiss' },
-    ],
+      { action: 'open', title: 'Open DARPAN' }
+    ]
   });
 }
 
-// ══════════════════════════════════════════════════════════════════
-// FCM BACKGROUND MESSAGE HANDLER
-// Fires when: app tab is closed, browser is minimized / in background
-// ══════════════════════════════════════════════════════════════════
+// FCM background message handler (data messages)
 messaging.onBackgroundMessage((payload) => {
   console.log('[DARPAN SW] Background FCM message:', payload);
-
-  const title = payload.notification?.title || 'DARPAN';
-  const body  = payload.notification?.body  || 'You have a new update.';
-  const data  = payload.data || {};
-
+  const title = payload.notification?.title || payload.data?.title || 'DARPAN';
+  const body  = payload.notification?.body  || payload.data?.body  || 'You have a new update.';
+  const data  = { ...(payload.data || {}), ...(payload.notification || {}) };
   return showRichNotification(title, body, data);
 });
 
-// ══════════════════════════════════════════════════════════════════
-// RAW PUSH EVENT HANDLER (belt-and-suspenders for Android PWA)
-// Catches pushes that FCM compat layer might miss on some devices
-// ══════════════════════════════════════════════════════════════════
+// Raw push event fallback (ensures notifications appear even if FCM compat doesn't auto-display)
 self.addEventListener('push', (event) => {
-  // FCM compat already handles most cases above; this catches the rest
   if (!event.data) return;
 
   let payload = {};
-  try { payload = event.data.json(); } catch { return; }
+  try {
+    payload = event.data.json();
+  } catch (err) {
+    // If text only
+    const text = event.data.text();
+    return event.waitUntil(showRichNotification('DARPAN', text, {}));
+  }
 
-  // If FCM already handled it via onBackgroundMessage, skip
-  if (payload.data?.handled === 'fcm') return;
+  // If this push already contained a notification block that FCM SDK auto-displayed, skip raw display
+  // But if payload was data-only, display it here
+  if (payload.notification && payload.notification.title) {
+    // Already displayed by browser or FCM SDK if handled
+    return;
+  }
 
-  const title = payload.notification?.title || payload.data?.title || 'DARPAN';
-  const body  = payload.notification?.body  || payload.data?.body  || 'New update!';
+  const title = payload.data?.title || 'DARPAN';
+  const body  = payload.data?.body  || 'New update on DARPAN!';
   const data  = payload.data || {};
 
   event.waitUntil(showRichNotification(title, body, data));
 });
 
-// ══════════════════════════════════════════════════════════════════
-// NOTIFICATION CLICK HANDLER
-// Opens the app or focuses existing tab — exactly like WhatsApp
-// ══════════════════════════════════════════════════════════════════
+// Notification click handler — opens DARPAN and navigates to stories
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
   if (event.action === 'dismiss') return;
 
-  const targetUrl = event.notification.data?.url || 'https://darpan-sathi.vercel.app/';
+  const targetUrl = event.notification.data?.url || 'https://darpan-sathi.vercel.app/?page=stories';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // If DARPAN is already open in a tab → focus it & navigate
+      // If DARPAN is already open in an existing tab → focus and navigate
       for (const client of windowClients) {
         if ('focus' in client) {
           client.focus();
-          // Tell the React app which page to navigate to
           client.postMessage({ type: 'NOTIFICATION_CLICK', url: targetUrl });
+          if ('navigate' in client && client.url !== targetUrl) {
+            client.navigate(targetUrl);
+          }
           return;
         }
       }
-      // Otherwise open a fresh tab
-      return clients.openWindow(targetUrl);
+      // If closed, open fresh window/tab
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
     })
   );
 });
 
-// ══════════════════════════════════════════════════════════════════
-// SERVICE WORKER LIFECYCLE — Skip waiting so updates apply instantly
-// ══════════════════════════════════════════════════════════════════
-self.addEventListener('install',  () => self.skipWaiting());
+// Instant SW updates
+self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(clients.claim()));

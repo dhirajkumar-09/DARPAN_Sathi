@@ -17,7 +17,7 @@ import { signInWithPopup, onAuthStateChanged, signOut, signInAnonymously, signIn
 import { 
   collection, addDoc, getDocs, query, where, orderBy, serverTimestamp , deleteDoc, doc , updateDoc ,arrayUnion, arrayRemove, onSnapshot, limit, setDoc ,getDoc
 } from 'firebase/firestore';
-import { getToken } from 'firebase/messaging';
+import { getToken, onMessage } from 'firebase/messaging';
 
 // --- Data Constants ---
 const NAV_LINKS = [
@@ -132,6 +132,67 @@ const CustomCursor = ({ isMobile }) => {
          <div className="rounded-full bg-[#C8A97E] w-2 h-2 -ml-1 -mt-1 shadow-[0_0_8px_rgba(200,169,126,0.8)]" style={{ pointerEvents: 'none' }} />
       </div>
     </>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────
+// ─── Foreground FCM Push Toast — WhatsApp-style slide-in notification ───
+// Shows when app IS open and receives a push (OS can't show it then)
+// ─────────────────────────────────────────────────────────────
+const ForegroundPushToast = ({ toast, onDismiss }) => {
+  if (!toast) return null;
+  return (
+    <div
+      className="fixed top-5 right-4 z-[99998] max-w-[340px] w-full"
+      style={{ animation: 'slideInFromRight 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards' }}
+    >
+      <style>{`
+        @keyframes slideInFromRight {
+          from { opacity: 0; transform: translateX(120%); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
+      <div className="relative flex items-start gap-3 p-4 rounded-2xl border border-[#C8A97E]/30 shadow-2xl backdrop-blur-xl"
+        style={{ background: 'linear-gradient(135deg, rgba(10,9,15,0.97) 0%, rgba(20,18,28,0.97) 100%)' }}>
+        {/* DARPAN icon */}
+        <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-[#C8A97E]/20 border border-[#C8A97E]/30 flex items-center justify-center text-xl">
+          🪬
+        </div>
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <p className="font-serif text-[#C8A97E] text-sm font-semibold leading-tight truncate">{toast.title}</p>
+          <p className="font-mono text-[#E8E4DC]/80 text-xs mt-0.5 line-clamp-2 leading-relaxed">{toast.body}</p>
+          <a
+            href={toast.link || '/'}
+            onClick={onDismiss}
+            className="inline-block mt-1.5 font-mono text-[10px] text-[#A8C87E] hover:text-white uppercase tracking-widest transition-colors cursor-pointer"
+          >
+            View →
+          </a>
+        </div>
+        {/* Dismiss */}
+        <button
+          onClick={onDismiss}
+          className="flex-shrink-0 text-[#8A8580] hover:text-[#E8E4DC] transition-colors cursor-pointer p-0.5"
+          aria-label="Dismiss"
+        >
+          <X size={14} />
+        </button>
+        {/* Progress bar auto-dismiss */}
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 rounded-b-2xl bg-[#C8A97E]/20 overflow-hidden">
+          <div
+            className="h-full bg-[#C8A97E]"
+            style={{ animation: 'shrinkWidth 6s linear forwards' }}
+          />
+        </div>
+        <style>{`
+          @keyframes shrinkWidth {
+            from { width: 100%; }
+            to   { width: 0%;   }
+          }
+        `}</style>
+      </div>
+    </div>
   );
 };
 
@@ -1627,7 +1688,8 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
             storyId: story.id,
             storyOwnerId: story.userId,
             currentUserId: auth.currentUser.uid,
-            currentUserName: profile?.name || "Student"
+            currentUserName: profile?.name || "Student",
+            snippet: newComment.text.slice(0, 100)
           })
         }).catch(err => console.error("Backend push failed:", err));
       }
@@ -3123,6 +3185,19 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [announcement, setAnnouncement] = useState("");
 const [realtimeNotifications, setRealtimeNotifications] = useState([]);
+  const [pushToast, setPushToast] = useState(null); // Foreground FCM toast notification
+  const [pushPermission, setPushPermission] = useState(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      return Notification.permission;
+    }
+    return 'default';
+  });
+  const [pushBannerDismissed, setPushBannerDismissed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return !!localStorage.getItem('push_banner_dismissed');
+    }
+    return false;
+  });
 
 useEffect(() => {
     // Database se sabse latest announcement nikalne ka logic
@@ -3240,35 +3315,77 @@ const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
     return () => window.removeEventListener('sw_navigate', handleSWNavigate);
   }, [isLoggedIn]);
 
-  const requestNotificationPermission = async (user) => {
+  const requestNotificationPermission = async (user, forcePrompt = false) => {
     try {
-      // Only request if supported and not already denied
-      if (!("Notification" in window)) return;
-      if (Notification.permission === "denied") return;
+      if (!("Notification" in window)) return false;
+      if (Notification.permission === "denied" && !forcePrompt) return false;
 
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") return;
-
-      const currentToken = await getToken(messaging, { 
-        vapidKey: "BDBEe-7SAS90LwTMU_UoA0aafej2PRiFJfbclGssYNWM0uoajoi2h1TPK_gQdOoh9s7o3fwl-sZs6F2NbR7OG5Q" 
-      });
-
-      if (currentToken) {
-        console.log("✅ FCM Token registered for this device:", currentToken.slice(0, 20) + "...");
-        // Save as array so the user can receive notifications on ALL their devices/browsers
-        // Cloud Functions read `fcmTokens` (plural) to send to all registered devices
-        await setDoc(doc(db, "users", user.uid), {
-          fcmTokens: arrayUnion(currentToken),   // multi-device: each device appended here
-          fcmToken: currentToken,                  // legacy single-token field kept for compatibility
-          name: user.displayName || "Darpan Student",
-          email: user.email
-        }, { merge: true });
+      let swReg = null;
+      if ('serviceWorker' in navigator) {
+        try {
+          swReg = await navigator.serviceWorker.ready;
+        } catch (e) {
+          console.warn("SW ready check error:", e);
+        }
       }
+
+      let perm = Notification.permission;
+      if (perm !== "granted") {
+        perm = await Notification.requestPermission();
+      }
+      setPushPermission(perm);
+      if (perm !== "granted") {
+        console.warn("Notification permission status:", perm);
+        return false;
+      }
+
+      const tokenOptions = { 
+        vapidKey: "BDBEe-7SAS90LwTMU_UoA0aafej2PRiFJfbclGssYNWM0uoajoi2h1TPK_gQdOoh9s7o3fwl-sZs6F2NbR7OG5Q" 
+      };
+      if (swReg) {
+        tokenOptions.serviceWorkerRegistration = swReg;
+      }
+
+      const currentToken = await getToken(messaging, tokenOptions);
+
+      if (currentToken && user) {
+        console.log("✅ FCM Token registered for this device:", currentToken.slice(0, 20) + "...");
+        await setDoc(doc(db, "users", user.uid), {
+          fcmTokens: arrayUnion(currentToken),
+          fcmToken: currentToken,
+          name: user.displayName || "Darpan Student",
+          email: user.email,
+          notificationsEnabled: true
+        }, { merge: true });
+        return true;
+      }
+      return false;
     } catch (error) {
-      // Gracefully ignore — e.g., iframe restrictions, service worker not ready
       console.warn("FCM token registration skipped:", error?.message || error);
+      return false;
     }
   };
+
+  // Foreground FCM listener: when app is open in tab, display popup toast
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    try {
+      const unsubscribeFCM = onMessage(messaging, (payload) => {
+        console.log("Foreground FCM message received:", payload);
+        const title = payload.notification?.title || payload.data?.title || 'DARPAN';
+        const body  = payload.notification?.body  || payload.data?.body  || 'New notification on your story!';
+        setPushToast({
+          title,
+          body,
+          link: '/?page=stories'
+        });
+        setTimeout(() => setPushToast(null), 6000);
+      });
+      return () => unsubscribeFCM();
+    } catch (err) {
+      console.warn("FCM foreground listener failed:", err);
+    }
+  }, [isLoggedIn]);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.matchMedia("(max-width: 768px)").matches || 'ontouchstart' in window);
@@ -3364,8 +3481,18 @@ useEffect(() => {
   }, []);
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (!isLoggedIn && currentPage !== "login") setCurrentPage("landing");
-    else if (isLoggedIn && !needsProfileSetup && (currentPage === "login" || currentPage === "landing")) setCurrentPage("home");
+    const params = new URLSearchParams(window.location.search);
+    const targetPage = params.get('page');
+
+    if (!isLoggedIn && currentPage !== "login") {
+      setCurrentPage("landing");
+    } else if (isLoggedIn && !needsProfileSetup) {
+      if (targetPage && (currentPage === "login" || currentPage === "landing" || currentPage === "home")) {
+        setCurrentPage(targetPage);
+      } else if (currentPage === "login" || currentPage === "landing") {
+        setCurrentPage("home");
+      }
+    }
   }, [isLoggedIn, currentPage, needsProfileSetup]);
 const renderPage = () => {
     if (!isLoggedIn) {
@@ -3481,6 +3608,59 @@ const renderPage = () => {
             );
           })}
         </nav>
+      )}
+      <ForegroundPushToast toast={pushToast} onDismiss={() => setPushToast(null)} />
+
+      {/* Background Push Notification Opt-in Prompt */}
+      {isLoggedIn && !needsProfileSetup && pushPermission === 'default' && !pushBannerDismissed && (
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-[110] max-w-md bg-[#0D0B12]/95 border border-[#C8A97E]/40 rounded-2xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl animate-fade-in">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-[#C8A97E]/15 border border-[#C8A97E]/30 flex items-center justify-center shrink-0 text-xl">
+              🔔
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-serif text-[#C8A97E] text-base font-semibold leading-tight">Turn on Background Notifications</h4>
+              <p className="font-mono text-xs text-[#E8E4DC]/80 mt-1 leading-relaxed">
+                Jab DARPAN band ho tab bhi comments & replies ka popup screen par aayega — ek tap me khol sakein.
+              </p>
+              <div className="flex items-center gap-2.5 mt-3">
+                <button
+                  onClick={async () => {
+                    const ok = await requestNotificationPermission(auth.currentUser, true);
+                    if (ok) {
+                      setPushToast({
+                        title: "🔔 Notifications Enabled!",
+                        body: "Aapko ab DARPAN band hone par bhi popups milenge.",
+                        link: "/?page=stories"
+                      });
+                    }
+                  }}
+                  className="px-3.5 py-1.5 bg-[#C8A97E] hover:bg-white text-black font-mono text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer shadow-md"
+                >
+                  Allow Notifications
+                </button>
+                <button
+                  onClick={() => {
+                    setPushBannerDismissed(true);
+                    localStorage.setItem('push_banner_dismissed', '1');
+                  }}
+                  className="px-2.5 py-1.5 text-[#8A8580] hover:text-[#E8E4DC] font-mono text-[11px] transition-colors cursor-pointer"
+                >
+                  Later
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setPushBannerDismissed(true);
+                localStorage.setItem('push_banner_dismissed', '1');
+              }}
+              className="text-[#8A8580] hover:text-white transition-colors cursor-pointer p-0.5"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
       )}
       <PWAInstallBanner />
 

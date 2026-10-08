@@ -3256,47 +3256,39 @@ const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const fetchUserDiaries = async () => {
-    if (!auth.currentUser) return;
-    try {
-      const q = query(collection(db, "diaries"), where("userId", "==", auth.currentUser.uid), orderBy("createdAt", "desc"));
-      const querySnapshot = await getDocs(q);
-      const loadedDiaries = [];
-      querySnapshot.forEach((doc) => loadedDiaries.push({ id: doc.id, ...doc.data() }));
-      setDiaryEntries(loadedDiaries); 
-    } catch (error) { console.error("Failed to fetch user diaries:", error); }
-  };
+    // Real-time diaries listener with safe JS sort (keeps Diary & Mood Canvas 100% in sync without refresh)
+  useEffect(() => {
+    if (!isLoggedIn || !auth.currentUser) return;
+    const q = query(collection(db, "diaries"), where("userId", "==", auth.currentUser.uid));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const loaded = [];
+      snapshot.forEach((doc) => loaded.push({ id: doc.id, ...doc.data() }));
+      loaded.sort((a, b) => {
+        const tA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+        const tB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+        return tB - tA;
+      });
+      setDiaryEntries(loaded);
+    }, (err) => console.warn("Real-time diaries error:", err));
+    return () => unsub();
+  }, [isLoggedIn]);
 
-  const fetchUserChats = async () => {
-     if (!auth.currentUser) return;
-     try {
-       const q = query(collection(db, "chats"), where("userId", "==", auth.currentUser.uid), orderBy("createdAt", "asc"));
-       const querySnapshot = await getDocs(q);
-       const loadedChats = [];
-       
-       querySnapshot.forEach((doc) => {
-         const data = doc.data();
-         loadedChats.push({
-           role: data.role,
-           parts: [{ text: data.text }] 
-         });
-       });
-       
-       if (loadedChats.length > 0) setChatMessages(loadedChats); 
-     } catch (error) { 
-       console.error("Failed to fetch user chats:", error); 
-     }
-  };
-
-  const fetchPublicStories = async () => {
-    try {
-      const q = query(collection(db, "stories"), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
-      const loadedStories = [];
-      snapshot.forEach(doc => loadedStories.push({ id: doc.id, ...doc.data() }));
-      setUserStories(loadedStories);
-    } catch (error) { console.error("Failed to fetch stories:", error); }
-  };
+  // Real-time stories listener (new stories, comments, likes sync across devices without refresh)
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const q = query(collection(db, "stories"));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const loaded = [];
+      snapshot.forEach(doc => loaded.push({ id: doc.id, ...doc.data() }));
+      loaded.sort((a, b) => {
+        const tA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+        const tB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+        return tB - tA;
+      });
+      setUserStories(loaded);
+    }, (err) => console.warn("Real-time stories error:", err));
+    return () => unsub();
+  }, [isLoggedIn]);
 useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async(user) => {
       if (user) {
@@ -3337,9 +3329,9 @@ useEffect(() => {
 
         setIsCheckingProfile(false);
 
-        fetchUserDiaries();
+        // real-time onSnapshot active for diaries
         fetchUserChats();
-        fetchPublicStories();
+        // real-time onSnapshot active for stories
         await requestNotificationPermission(user);
       } else {
         setIsLoggedIn(false);
@@ -3385,7 +3377,7 @@ const renderPage = () => {
       case "home": return <HomePage setPage={setCurrentPage} announcement={announcement} />;
       case "stories": return <StoriesPage userStories={userStories} setUserStories={setUserStories} profile={profile} />;
       case "diary": return <DiaryPage diaryEntries={diaryEntries} setDiaryEntries={setDiaryEntries} />;
-     case "report": return <WeeklyAaina currentUser={auth.currentUser} setPage={setCurrentPage} />;
+     case "report": return <WeeklyAaina currentUser={auth.currentUser} diaryEntries={diaryEntries} setPage={setCurrentPage} />;
       case "chat": return <ChatPage messages={chatMessages} setMessages={setChatMessages} />; 
       case "profile": return <ProfilePage profile={profile} setProfile={setProfile} />;
       default: return <HomePage setPage={setCurrentPage} announcement={announcement} />;

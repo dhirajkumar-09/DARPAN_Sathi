@@ -417,7 +417,7 @@ const Footer = () => {
             >
               <Shield className="w-4 h-4 text-[#A8C87E] group-hover:scale-110 transition-transform" />
               <span className="font-mono text-[10px] uppercase tracking-widest flex items-center gap-1">
-                Google Verified <span className="text-[8px] opacity-70">Ã°Å¸â€â€”</span>
+                Google Verified <span className="text-[8px] opacity-70">✔</span>
               </span>
             </a>
             
@@ -433,7 +433,7 @@ const Footer = () => {
               DARP<span className="text-[#C8A97E]/40">AN</span>
             </div>
             <div className="font-mono text-[9px] md:text-[10px] tracking-widest text-[#5A5550] uppercase text-center">
-              Made with care for Indian Students Ã‚Â· Ã‚Â© {new Date().getFullYear()} Darpan
+              Made with care for Indian Students Ã‚· Ã‚Â© {new Date().getFullYear()} Darpan
             </div>
             <div className="flex gap-8 font-mono text-[10px] tracking-widest text-[#8A8580] uppercase">
               <button onClick={() => setModalContent('privacy')} className="hover:text-[#C8A97E] transition-colors cursor-pointer font-bold">Privacy Policy</button>
@@ -544,25 +544,25 @@ const detectMood = (text) => {
 };
 
 const MOOD_STYLES = {
-  happy:    { bg: 'from-amber-900/20 to-yellow-900/10',  dot: 'bg-yellow-400',  label: 'Feeling happy âœ¨' },
-  anxious:  { bg: 'from-purple-900/20 to-violet-900/10', dot: 'bg-purple-400',  label: 'Feeling anxious ðŸ˜°' },
-  angry:    { bg: 'from-red-900/20 to-orange-900/10',    dot: 'bg-red-400',     label: 'Feeling frustrated ðŸ˜¤' },
-  sad:      { bg: 'from-blue-900/20 to-indigo-900/10',   dot: 'bg-blue-400',    label: 'Feeling low ðŸ’™' },
-  stressed: { bg: 'from-orange-900/20 to-amber-900/10',  dot: 'bg-orange-400',  label: 'Feeling stressed ðŸ˜“' },
-  peaceful: { bg: 'from-green-900/20 to-teal-900/10',    dot: 'bg-green-400',   label: 'Feeling calm ðŸƒ' },
+  happy:    { bg: 'from-amber-900/20 to-yellow-900/10',  dot: 'bg-yellow-400',  label: 'Feeling happy ✨' },
+  anxious:  { bg: 'from-purple-900/20 to-violet-900/10', dot: 'bg-purple-400',  label: 'Feeling anxious 😰' },
+  angry:    { bg: 'from-red-900/20 to-orange-900/10',    dot: 'bg-red-400',     label: 'Feeling frustrated 😤' },
+  sad:      { bg: 'from-blue-900/20 to-indigo-900/10',   dot: 'bg-blue-400',    label: 'Feeling low 💙' },
+  stressed: { bg: 'from-orange-900/20 to-amber-900/10',  dot: 'bg-orange-400',  label: 'Feeling stressed 😣' },
+  peaceful: { bg: 'from-green-900/20 to-teal-900/10',    dot: 'bg-green-400',   label: 'Feeling calm 🍃' },
   neutral:  { bg: 'from-[#0A0A0F] to-[#06060A]',         dot: 'bg-[#8A8580]',   label: 'Sathi is listening' },
 };
 
 // â”€â”€â”€ QUICK EMOTION PROMPTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const QUICK_PROMPTS = [
-  { emoji: 'ðŸ˜“', label: 'Stressed',    text: 'I am feeling very stressed and overwhelmed right now.' },
-  { emoji: 'ðŸ˜°', label: 'Anxious',     text: 'I am feeling anxious and nervous. I cannot stop worrying.' },
-  { emoji: 'ðŸ˜¢', label: 'Lonely',      text: 'I am feeling very lonely and nobody understands me.' },
-  { emoji: 'ðŸ˜¤', label: 'Angry',       text: 'I am feeling really angry and frustrated right now.' },
-  { emoji: 'ðŸ˜´', label: 'Exhausted',   text: 'I am completely exhausted, physically and mentally.' },
-  { emoji: 'ðŸ’”', label: 'Heartbroken', text: 'I am heartbroken and sad. Things feel hopeless.' },
-  { emoji: 'ðŸ¤¯', label: 'Overwhelmed', text: 'Everything feels too much right now. I am overwhelmed.' },
-  { emoji: 'âœ¨', label: 'Good today',  text: 'I am feeling okay today! Just want to talk and share my day.' },
+  { emoji: '😓', label: 'Stressed',    text: 'I am feeling very stressed and overwhelmed right now.' },
+  { emoji: '😰', label: 'Anxious',     text: 'I am feeling anxious and nervous. I cannot stop worrying.' },
+  { emoji: '😢', label: 'Lonely',      text: 'I am feeling very lonely and nobody understands me.' },
+  { emoji: '😤', label: 'Angry',       text: 'I am feeling really angry and frustrated right now.' },
+  { emoji: '😴', label: 'Exhausted',   text: 'I am completely exhausted, physically and mentally.' },
+  { emoji: '💔', label: 'Heartbroken', text: 'I am heartbroken and sad. Things feel hopeless.' },
+  { emoji: '🤯', label: 'Overwhelmed', text: 'Everything feels too much right now. I am overwhelmed.' },
+  { emoji: '✨',       label: 'Good today',  text: 'I am feeling okay today! Just want to talk and share my day.' },
 ];
 
 const ChatPage = ({ messages, setMessages }) => {
@@ -886,7 +886,7 @@ const ChatPage = ({ messages, setMessages }) => {
                 <span className={`w-1.5 h-1.5 rounded-full ${moodStyle.dot} transition-colors duration-700`} />
                 <p className="font-mono text-[9px] tracking-widest uppercase transition-all duration-700"
                   style={{ color: currentMood === 'neutral' ? '#8A8580' : currentMood === 'happy' ? '#fbbf24' : currentMood === 'sad' ? '#60a5fa' : currentMood === 'stressed' ? '#fb923c' : currentMood === 'anxious' ? '#a78bfa' : currentMood === 'angry' ? '#f87171' : '#4ade80' }}>
-                  {isSpeaking ? 'Speakingâ€¦' : moodStyle.label}
+                  {isSpeaking ? 'Speaking…' : moodStyle.label}
                 </p>
               </div>
             </div>
@@ -1014,7 +1014,7 @@ const ChatPage = ({ messages, setMessages }) => {
             <textarea ref={textareaRef} value={inputValue}
               onChange={e => setInputValue(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
-              placeholder={isRecording ? 'Listeningâ€¦ speak now' : 'Type in Hindi, English or Hinglishâ€¦'}
+              placeholder={isRecording ? 'Listening… speak now' : 'Type in Hindi, English or Hinglish…'}
               className={`flex-grow bg-[#141419] border rounded-xl py-3.5 pl-4 pr-12 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-[15px] focus:outline-none transition-all resize-none custom-scrollbar ${
                 isRecording ? 'border-[#C8A97E]/80 border-dashed bg-[#C8A97E]/5' : 'border-white/10 focus:border-[#C8A97E]/50'
               }`} rows={1} style={{ minHeight: '52px', maxHeight: '120px' }} />
@@ -1054,11 +1054,11 @@ const HomePage = ({ setPage, announcement }) => {
   const miniChatEndRef = useRef(null);
 
   const RATING_LABELS = {
-    1: "Could be better Ã°Å¸Ëœâ€",
-    2: "Needs improvement Ã°Å¸ËœÂ",
-    3: "Helpful & good Ã°Å¸â„¢â€š",
-    4: "Really comforting! Ã°Å¸ËœÅ ",
-    5: "Life-changing / loved it! Ã°Å¸Å’Å¸"
+    1: "Could be better 😢",
+    2: "Needs improvement 😕",
+    3: "Helpful & good 🙂",
+    4: "Really comforting! 😊",
+    5: "Life-changing / loved it! 🌟"
   };
 
   // Auto-scroll mini-chat

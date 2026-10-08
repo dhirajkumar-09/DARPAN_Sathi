@@ -134,10 +134,10 @@ const CustomCursor = ({ isMobile }) => {
   );
 };
 
-// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
-// PWA Install Banner Ã¢â‚¬â€ "Add to Home Screen" like WhatsApp
+// ─────────────────────────────────────────────────────────────
+// ─── PWA Install Banner — "Add to Home Screen" like WhatsApp ───
 // Shows a native-style banner on Android Chrome browsers
-// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ─────────────────────────────────────────────────────────────
 const PWAInstallBanner = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showBanner, setShowBanner] = useState(false);
@@ -433,7 +433,7 @@ const Footer = () => {
               DARP<span className="text-[#C8A97E]/40">AN</span>
             </div>
             <div className="font-mono text-[9px] md:text-[10px] tracking-widest text-[#5A5550] uppercase text-center">
-              Made with care for Indian Students Ã‚· Ã‚Â© {new Date().getFullYear()} Darpan
+              Made with care for Indian Students · © {new Date().getFullYear()} Darpan
             </div>
             <div className="flex gap-8 font-mono text-[10px] tracking-widest text-[#8A8580] uppercase">
               <button onClick={() => setModalContent('privacy')} className="hover:text-[#C8A97E] transition-colors cursor-pointer font-bold">Privacy Policy</button>
@@ -524,14 +524,14 @@ const AuthPage = ({ setPage, setIsLoggedIn }) => {
   );
 };
 
-// â”€â”€â”€ CRISIS KEYWORDS â€” detect if student needs urgent help â”€â”€â”€
+// ─── CRISIS KEYWORDS — detect if student needs urgent help ───
 const CRISIS_KEYWORDS = [
   'suicide', 'kill myself', 'end my life', 'want to die', 'self harm',
   'hurt myself', 'khatam kar lun', 'mar jaun', 'marna chahta', 'nahi rehna',
   'khud ko hurt', 'jeena nahi', 'zindagi nahi chahiye'
 ];
 
-// â”€â”€â”€ MOOD DETECTION â€” from user text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── MOOD DETECTION — from user text ─────────────────────────
 const detectMood = (text) => {
   const t = text.toLowerCase();
   if (/happy|khush|amazing|wonderful|great|excited|blessed|acha lag/.test(t)) return 'happy';
@@ -553,7 +553,7 @@ const MOOD_STYLES = {
   neutral:  { bg: 'from-[#0A0A0F] to-[#06060A]',         dot: 'bg-[#8A8580]',   label: 'Sathi is listening' },
 };
 
-// â”€â”€â”€ QUICK EMOTION PROMPTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── QUICK EMOTION PROMPTS ────────────────────────────────────
 const QUICK_PROMPTS = [
   { emoji: '😓', label: 'Stressed',    text: 'I am feeling very stressed and overwhelmed right now.' },
   { emoji: '😰', label: 'Anxious',     text: 'I am feeling anxious and nervous. I cannot stop worrying.' },
@@ -720,11 +720,11 @@ const ChatPage = ({ messages, setMessages }) => {
       setIsRecording(false);
     }
 
-    // â”€â”€ Mood detection â€” update dynamic background â”€â”€
+    // ── Mood detection — update dynamic background ──
     const detectedMood = detectMood(currentText);
     setCurrentMood(detectedMood);
 
-    // â”€â”€ Crisis detection â€” show helpline panel â”€â”€
+    // ── Crisis detection — show helpline panel ──
     const isCrisis = CRISIS_KEYWORDS.some(kw => currentText.toLowerCase().includes(kw));
     if (isCrisis) setShowCrisisPanel(true);
 
@@ -819,7 +819,7 @@ const ChatPage = ({ messages, setMessages }) => {
 
   return (
     <div className={`animate-fade-in pt-24 pb-6 px-3 sm:px-6 md:px-12 lg:px-20 min-h-screen flex flex-col relative overflow-hidden transition-all duration-1000 bg-gradient-to-br ${moodStyle.bg}`}>
-      {/* Dynamic ambient orbs â€” shift color with mood */}
+      {/* Dynamic ambient orbs — shift color with mood */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-40">
         <div className={`absolute rounded-full blur-[120px] w-[500px] h-[500px] -left-[10%] -top-[10%] transition-all duration-1000 ${
           currentMood === 'sad' ? 'bg-blue-600/20' : currentMood === 'anxious' ? 'bg-purple-600/20' :
@@ -834,7 +834,7 @@ const ChatPage = ({ messages, setMessages }) => {
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-[#0A0A0F] border border-red-500/40 rounded-2xl p-6 max-w-sm w-full shadow-[0_0_60px_rgba(239,68,68,0.2)]">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center text-xl">ðŸ†˜</div>
+              <div className="w-10 h-10 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center text-xl">🆘</div>
               <div>
                 <p className="font-serif font-bold text-[#E8E4DC] text-lg">Sathi is here with you</p>
                 <p className="font-mono text-[10px] text-red-400 tracking-widest uppercase">You are not alone</p>
@@ -845,7 +845,7 @@ const ChatPage = ({ messages, setMessages }) => {
             </p>
             <div className="space-y-2 mb-5">
               {[
-                { name: 'iCall (TISS)', number: '9152987821', desc: 'Monâ€“Sat, 8amâ€“10pm' },
+                { name: 'iCall (TISS)', number: '9152987821', desc: 'Mon–Sat, 8am–10pm' },
                 { name: 'Vandrevala Foundation', number: '1860-2662-345', desc: '24/7 Free helpline' },
                 { name: 'iMind (NIMHANS)', number: '080-46110007', desc: 'Free counseling' },
               ].map(h => (
@@ -869,10 +869,10 @@ const ChatPage = ({ messages, setMessages }) => {
 
       <div className="flex-grow w-full max-w-4xl mx-auto flex flex-col z-10 h-[calc(100dvh-130px)] min-h-[500px]">
 
-        {/* â”€â”€ HEADER â”€â”€ */}
+        {/* ── HEADER ── */}
         <div className="bg-[#0A0A0F]/90 backdrop-blur-xl border border-[#C8A97E]/20 rounded-t-2xl p-4 sm:p-5 flex justify-between items-center shadow-lg">
           <div className="flex items-center gap-3">
-            {/* Sathi avatar â€” pulses when speaking */}
+            {/* Sathi avatar — pulses when speaking */}
             <div className="relative w-10 h-10 sm:w-12 sm:h-12 shrink-0">
               <div className={`w-full h-full rounded-full bg-gradient-to-br from-[#C8A97E] to-[#8A724E] flex items-center justify-center shadow-inner ${isSpeaking ? 'ring-2 ring-[#C8A97E]/60 ring-offset-2 ring-offset-[#0A0A0F] animate-pulse' : ''}`}>
                 <span className="font-serif text-xl sm:text-2xl font-bold text-black leading-none pt-0.5">S</span>
@@ -924,10 +924,10 @@ const ChatPage = ({ messages, setMessages }) => {
           </div>
         </div>
 
-        {/* â”€â”€ MESSAGES â”€â”€ */}
+        {/* ── MESSAGES ── */}
         <div className="flex-grow bg-[#06060A]/60 backdrop-blur-md border-x border-[#C8A97E]/15 p-4 sm:p-5 overflow-y-auto custom-scrollbar flex flex-col gap-4">
 
-          {/* Quick Emotion Prompts â€” shown only before first message */}
+          {/* Quick Emotion Prompts — shown only before first message */}
           {showQuickPrompts && (
             <div className="animate-fade-in mb-2">
               <p className="font-mono text-[10px] tracking-widest text-[#8A8580] uppercase text-center mb-3">How are you feeling right now?</p>
@@ -997,7 +997,7 @@ const ChatPage = ({ messages, setMessages }) => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* â”€â”€ INPUT BAR â”€â”€ */}
+        {/* ── INPUT BAR ── */}
         <div className="bg-[#0A0A0F]/90 backdrop-blur-xl border border-[#C8A97E]/20 rounded-b-2xl p-3 sm:p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
           <div className="relative flex items-center gap-2">
             {/* Mic button */}
@@ -1030,7 +1030,7 @@ const ChatPage = ({ messages, setMessages }) => {
           {!showQuickPrompts && messages.length > 2 && (
             <button onClick={() => setShowQuickPrompts(true)}
               className="mt-2 w-full font-mono text-[9px] tracking-widest uppercase text-[#5A5550] hover:text-[#C8A97E] transition-colors cursor-pointer text-center">
-              â†‘ Show emotion shortcuts
+              ↑ Show emotion shortcuts
             </button>
           )}
         </div>
@@ -1047,7 +1047,7 @@ const HomePage = ({ setPage, announcement }) => {
 
   // Mini-Chat States
   const [miniChatHistory, setMiniChatHistory] = useState([
-    { from: "sathi", text: "Hey Ã¢â‚¬â€ how was today? Feel free to speak freely." }
+    { from: "sathi", text: "Hey — how was today? Feel free to speak freely." }
   ]);
   const [miniChatInput, setMiniChatInput] = useState("");
   const [isMiniChatLoading, setIsMiniChatLoading] = useState(false);
@@ -1221,7 +1221,7 @@ const HomePage = ({ setPage, announcement }) => {
               needs most.
             </h1>
             <p className="font-serif text-lg md:text-xl text-[#A09A95] font-light leading-relaxed max-w-md">
-              Darpan is an AI that listens without judgment, finds patterns in your emotions, and helps you finally understand what's going on inside Ã¢â‚¬â€ in your language, for your world.
+              Darpan is an AI that listens without judgment, finds patterns in your emotions, and helps you finally understand what's going on inside — in your language, for your world.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <button onClick={() => setPage("chat")} className="cursor-pointer px-8 py-4 bg-[#C8A97E] text-black font-mono text-xs tracking-widest uppercase font-medium hover:bg-white transition-colors flex items-center justify-center gap-2 group shadow-[0_0_40px_rgba(200,169,126,0.3)] rounded-lg">
@@ -2320,7 +2320,7 @@ const DiaryCalendar = ({ entries, selectedDate, setSelectedDate }) => {
             const hasEntry = !!currentEntry;
             const isSelected = selectedDate === formattedDate;
             
-            const displayContent = hasEntry ? (currentEntry.moodEmoji || 'Ã°Å¸â€œÂ') : day;
+            const displayContent = hasEntry ? (currentEntry.moodEmoji || '📓') : day;
 
             return (
               <button
@@ -2399,7 +2399,7 @@ const DiaryPage = ({ diaryEntries, setDiaryEntries }) => {
     if (!newEntry.trim() || !auth.currentUser) return;
     setIsSaving(true);
     
-    let moodEmoji = "Ã°Å¸â€œÂ"; 
+    let moodEmoji = "📓";
     
     try {
       const response = await fetch("https://dapan-api-secure.onrender.com/api/generate-emoji", {
@@ -2544,7 +2544,7 @@ const DiaryPage = ({ diaryEntries, setDiaryEntries }) => {
                     <div className="flex justify-between items-start mb-3 border-b border-white/5 pb-2.5">
                       <div className="flex items-center gap-3">
                         <span className="text-2xl bg-white/5 w-10 h-10 rounded-full flex items-center justify-center border border-white/10 group-hover:border-[#C8A97E]/40 transition-colors shadow-sm flex-shrink-0" title="AI Mood Analysis">
-                          {entry.moodEmoji || "Ã°Å¸â€œâ€œ"}
+                          {entry.moodEmoji || "📓"}
                         </span>
                         <div>
                           <div className="font-serif text-[#C8A97E] text-base font-bold leading-tight">{entry.date}</div>
@@ -3016,7 +3016,7 @@ const LandingPage = ({ setPage }) => {
                   title="Verify Google Safety Report"
                 >
                   <Shield className="w-3.5 h-3.5 text-[#A8C87E]/70 group-hover:text-[#A8C87E]" />
-                  <span className="font-mono text-[9px] uppercase tracking-widest">Google Safe <span className="opacity-60">Ã°Å¸â€â€”</span></span>
+                  <span className="font-mono text-[9px] uppercase tracking-widest">Google Safe <span className="opacity-60">↗</span></span>
                 </a>
                 <div className="flex items-center gap-1.5 text-[#5A5550]">
                   <Check className="w-3.5 h-3.5 text-[#7EB8C8]/70" />
@@ -3147,7 +3147,7 @@ useEffect(() => {
     });
     setRealtimeNotifications(loadedNotifs);
   }, (error) => {
-    console.warn("Ã¢Å¡Â Ã¯Â¸Â Notification indexed query failed (likely missing composite index), attempting fallback sort:", error?.message);
+    console.warn("⚠️ Notification indexed query failed (likely missing composite index), attempting fallback sort:", error?.message);
     try {
       const qFallback = query(
         collection(db, "notifications"),
@@ -3166,10 +3166,10 @@ useEffect(() => {
         });
         setRealtimeNotifications(loadedNotifs.slice(0, 10));
       }, (fbErr) => {
-        console.error("Ã¢ÂÅ’ Fallback notification query failed:", fbErr);
+        console.error("❌ Fallback notification query failed:", fbErr);
       });
     } catch (e) {
-      console.error("Ã¢ÂÅ’ Error setting up fallback listener:", e);
+      console.error("❌ Error setting up fallback listener:", e);
     }
   });
 
@@ -3192,15 +3192,15 @@ const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
       parts: [{ text: "Namaste! I am Sathi. I am here to listen, whether you want to talk about exams, stress, or just your day. You can type or use the microphone to speak to me in English, Hindi, or Hinglish. How are you feeling right now?" }]
     }
   ]);
-// Service Worker Registration â€” enables background push notifications
+// Service Worker Registration — enables background push notifications
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/firebase-messaging-sw.js')
         .then((registration) => {
-          console.log('âœ… Service Worker registered:', registration.scope);
+          console.log('✅ Service Worker registered:', registration.scope);
         })
         .catch((err) => {
-          console.error('âŒ Service Worker registration failed:', err);
+          console.error('❌ Service Worker registration failed:', err);
         });
     }
   }, []);
@@ -3233,7 +3233,7 @@ const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
       });
 
       if (currentToken) {
-        console.log("Ã¢Å“â€¦ FCM Token registered for this device:", currentToken.slice(0, 20) + "...");
+        console.log("✅ FCM Token registered for this device:", currentToken.slice(0, 20) + "...");
         // Save as array so the user can receive notifications on ALL their devices/browsers
         // Cloud Functions read `fcmTokens` (plural) to send to all registered devices
         await setDoc(doc(db, "users", user.uid), {
@@ -3244,7 +3244,7 @@ const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
         }, { merge: true });
       }
     } catch (error) {
-      // Gracefully ignore Ã¢â‚¬â€ e.g., iframe restrictions, service worker not ready
+      // Gracefully ignore — e.g., iframe restrictions, service worker not ready
       console.warn("FCM token registration skipped:", error?.message || error);
     }
   };
@@ -3385,7 +3385,7 @@ const renderPage = () => {
       case "home": return <HomePage setPage={setCurrentPage} announcement={announcement} />;
       case "stories": return <StoriesPage userStories={userStories} setUserStories={setUserStories} profile={profile} />;
       case "diary": return <DiaryPage diaryEntries={diaryEntries} setDiaryEntries={setDiaryEntries} />;
-     case "report": return <WeeklyAaina currentUser={auth.currentUser} />;
+     case "report": return <WeeklyAaina currentUser={auth.currentUser} setPage={setCurrentPage} />;
       case "chat": return <ChatPage messages={chatMessages} setMessages={setChatMessages} />; 
       case "profile": return <ProfilePage profile={profile} setProfile={setProfile} />;
       default: return <HomePage setPage={setCurrentPage} announcement={announcement} />;
@@ -3469,7 +3469,7 @@ const renderPage = () => {
           })}
         </nav>
       )}
-      {/* PWA Install Banner */}
+// ─── PWA Install Banner — "Add to Home Screen" like WhatsApp ───
       <PWAInstallBanner />
 
       {isLoggedIn && currentPage !== "chat" && <Footer />}

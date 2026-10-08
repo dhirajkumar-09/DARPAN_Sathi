@@ -1,1 +1,87 @@
 @import "tailwindcss";
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #06060A;
+    color: #E8E4DC;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    overflow-x: hidden;
+  }
+}
+
+.font-serif {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+.font-mono {
+  font-family: 'DM Mono', monospace;
+}
+
+/* Custom cursor styling - keep inputs and text selectable with normal text cursor */
+.custom-cursor-active, .custom-cursor-active button, .custom-cursor-active a {
+  cursor: none !important;
+}
+.custom-cursor-active input, 
+.custom-cursor-active textarea,
+.custom-cursor-active [contenteditable="true"] {
+  cursor: text !important;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #06060A;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2620;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C8A97E;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(200, 169, 126, 0.3);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(200, 169, 126, 0.6);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes orbFloat {
+  0%, 100% { transform: translateY(0) scale(1) rotate(0deg); }
+  33% { transform: translateY(-20px) scale(1.03) rotate(1deg); }
+  66% { transform: translateY(10px) scale(0.98) rotate(-1deg); }
+}
+
+@keyframes cursorPulse {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.1); }
+}
+
+@keyframes borderGlow {
+  0%, 100% { border-color: rgba(200, 169, 126, 0.15); box-shadow: 0 0 15px rgba(200, 169, 126, 0.05); }
+  50% { border-color: rgba(200, 169, 126, 0.45); box-shadow: 0 0 25px rgba(200, 169, 126, 0.15); }
+}

@@ -343,123 +343,136 @@ export default function WeeklyAaina({ currentUser }) {
   }, [currentUser, weekOffset]);
 
   if (loading) return (
-    <div style={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", backgroundColor: "#06060A", color: "#A8C87E", fontFamily: "'DM Mono', monospace", letterSpacing: "2px" }}>
-      ANALYZING {weekOffset > 0 ? "PAST" : "THIS"} WEEK...
+    <div className="min-h-screen flex flex-col justify-center items-center bg-[#06060A] text-[#A8C87E] font-mono tracking-widest text-xs gap-3">
+      <div className="w-8 h-8 rounded-full border-2 border-[#A8C87E] border-t-transparent animate-spin" />
+      <span>ANALYZING {weekOffset > 0 ? "PAST" : "THIS"} WEEK...</span>
     </div>
   );
 
   return (
-    <div style={{ backgroundColor: "#06060A", color: "#E8E4DC", padding: "120px 20px 80px", fontFamily: "'Cormorant Garamond', serif", minHeight: "100vh" }}>
+    <div className="bg-[#06060A] text-[#E8E4DC] pt-28 md:pt-32 pb-20 px-4 sm:px-6 md:px-12 min-h-screen font-serif">
 
       {showDailyModal && (
-        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.8)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 9999, backdropFilter: "blur(5px)" }}>
-          <div style={{ backgroundColor: "#0A0A0F", padding: "40px", borderRadius: "16px", maxWidth: "500px", width: "90%", border: "1px solid #A8C87E", textAlign: "center", boxShadow: "0 0 30px rgba(168,200,126,0.15)" }}>
-            <h2 style={{ color: "#A8C87E", marginTop: 0, fontSize: "28px" }}>🌙 Evening Check-in</h2>
-            <p style={{ color: "#A09A95", fontSize: "18px" }}>It's time for your daily reflection. Here is what you captured today:</p>
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex justify-center items-center z-[9999] p-4 animate-fade-in">
+          <div className="bg-[#0A0A0F] p-6 sm:p-10 rounded-2xl max-w-lg w-full border border-[#A8C87E]/40 text-center shadow-[0_0_40px_rgba(168,200,126,0.15)] relative">
+            <h2 className="text-[#A8C87E] text-2xl md:text-3xl font-serif font-bold mt-0 mb-2">🌙 Evening Check-in</h2>
+            <p className="text-[#A09A95] text-base md:text-lg mb-4">It's time for your daily reflection. Here is what you captured today:</p>
             {dailyDiaryToday ? (
-              <div style={{ fontStyle: "italic", margin: "25px 0", color: "#E8E4DC", fontSize: "20px", borderLeft: "2px solid #A8C87E", paddingLeft: "15px", textAlign: "left" }}>
-                "Today you felt <strong>{dailyDiaryToday.moodEmoji || "😐"}</strong>: {dailyDiaryToday.content}"
+              <div className="italic my-6 text-[#E8E4DC] text-lg md:text-xl border-l-2 border-[#A8C87E] pl-4 text-left bg-white/[0.02] p-4 rounded-r-xl">
+                "Today you felt <strong className="not-italic text-2xl">{dailyDiaryToday.moodEmoji || "😐"}</strong>: {dailyDiaryToday.content}"
               </div>
             ) : (
-              <p style={{ color: "#C8A97E", margin: "25px 0", fontSize: "18px" }}>
-                You haven't logged any thoughts or moods today yet. Take a moment to write in your diary now!
+              <p className="text-[#C8A97E] my-6 text-base md:text-lg bg-[#C8A97E]/5 p-4 rounded-xl border border-[#C8A97E]/20">
+                You haven't logged any thoughts or moods today yet. Take a moment to write in your midnight diary now!
               </p>
             )}
-            <button onClick={() => setShowDailyModal(false)} style={{ backgroundColor: "#A8C87E", color: "#000", border: "none", padding: "12px 30px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "1px" }}>
+            <button 
+              type="button"
+              onClick={() => setShowDailyModal(false)} 
+              className="bg-[#A8C87E] text-black border-none px-8 py-3 rounded-xl font-bold font-mono uppercase tracking-widest text-xs hover:bg-white transition-all cursor-pointer shadow-[0_0_20px_rgba(168,200,126,0.3)]"
+            >
               Close Reflection
             </button>
           </div>
         </div>
       )}
 
-      <div style={{ maxWidth: "900px", margin: "0 auto", animation: "fadeIn 0.8s ease-out" }}>
+      <div className="max-w-4xl mx-auto animate-fade-in">
 
         {/* Date Navigation Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "40px", padding: "15px 20px", backgroundColor: "#0A0A0F", border: "1px solid rgba(200,169,126,0.2)", borderRadius: "16px" }}>
+        <div className="flex justify-between items-center mb-10 p-4 sm:p-5 bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-2xl shadow-lg">
           <button 
+            type="button"
             onClick={() => setWeekOffset(prev => prev + 1)} 
-            style={{ display: "flex", alignItems: "center", gap: "8px", backgroundColor: "transparent", color: "#C8A97E", border: "none", cursor: "pointer", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", fontSize: "12px" }}>
-            <ChevronLeft size={16} /> Past Week
+            className="flex items-center gap-1 sm:gap-2 text-[#C8A97E] hover:text-white transition-colors cursor-pointer font-mono uppercase text-[11px] sm:text-xs tracking-wider"
+          >
+            <ChevronLeft size={16} /> <span className="hidden sm:inline">Past</span> Week
           </button>
           
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "12px", letterSpacing: "0.2em", color: "#A8C87E", textTransform: "uppercase" }}>
+          <div className="text-center px-2">
+            <div className="font-mono text-[10px] sm:text-xs tracking-[0.2em] text-[#A8C87E] uppercase font-semibold">
               {weekOffset === 0 ? "Current Week" : `${weekOffset} Week(s) Ago`}
             </div>
-            <div style={{ fontSize: "18px", color: "#E8E4DC", fontWeight: "bold", marginTop: "4px" }}>{dateRangeText}</div>
+            <div className="text-base sm:text-lg md:text-xl text-[#E8E4DC] font-bold mt-1">{dateRangeText}</div>
           </div>
 
           <button 
+            type="button"
             onClick={() => setWeekOffset(prev => Math.max(0, prev - 1))} 
             disabled={weekOffset === 0}
-            style={{ display: "flex", alignItems: "center", gap: "8px", backgroundColor: "transparent", color: weekOffset === 0 ? "#5A5550" : "#C8A97E", border: "none", cursor: weekOffset === 0 ? "not-allowed" : "pointer", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", fontSize: "12px" }}>
-            Next Week <ChevronRight size={16} />
+            className={`flex items-center gap-1 sm:gap-2 font-mono uppercase text-[11px] sm:text-xs tracking-wider transition-colors ${
+              weekOffset === 0 ? "text-[#5A5550] cursor-not-allowed" : "text-[#C8A97E] hover:text-white cursor-pointer"
+            }`}
+          >
+            <span className="hidden sm:inline">Next</span> Week <ChevronRight size={16} />
           </button>
         </div>
 
         {!weeklyData ? (
-          <div style={{ textAlign: "center", color: "#A09A95", marginTop: "100px", fontSize: "22px" }}>
-            <div style={{ fontSize: "40px", marginBottom: "20px" }}>📓</div>
-            {weekOffset > 0 ? "No entries found for this period." : "No entries found yet. Your Darpan journey is waiting!"}
+          <div className="text-center text-[#A09A95] my-24 text-xl sm:text-2xl bg-[#0A0A0F]/50 border border-white/5 rounded-3xl p-12">
+            <div className="text-5xl mb-4">📓</div>
+            <p className="font-serif">
+              {weekOffset > 0 ? "No entries found for this period." : "No entries logged yet this week. Your Darpan journey is waiting in My Diary!"}
+            </p>
           </div>
         ) : (
           <>
-            <div style={{ textAlign: "center", marginBottom: "50px" }}>
-              <h1 style={{ fontSize: "48px", fontWeight: "300", margin: 0 }}>
+            <div className="text-center mb-12">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-light leading-tight">
                 Reflections from <br />
-                <strong style={{ color: "#A8C87E", fontWeight: "bold" }}>your past 7 days.</strong>
+                <strong className="text-[#A8C87E] font-bold">your past 7 days.</strong>
               </h1>
-              <p style={{ fontSize: "20px", fontStyle: "italic", margin: "20px 0 0 0", color: "#A09A95" }}>{weeklyData.greeting}</p>
+              <p className="text-lg sm:text-xl italic mt-4 text-[#A09A95] max-w-2xl mx-auto">{weeklyData.greeting}</p>
             </div>
 
             {/* Stats Row */}
-            <div style={{ display: "flex", gap: "20px", justifyContent: "space-between", margin: "40px 0", flexWrap: "wrap" }}>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 my-10">
               {[
-                { label: "Avg Score", value: `${weeklyData.averageScore} / 5`, color: "#A8C87E", border: "rgba(168,200,126,0.2)" },
+                { label: "Avg Score", value: `${weeklyData.averageScore} / 5`, color: "#A8C87E", border: "rgba(168,200,126,0.3)" },
                 { label: "📈 Best Day",  value: weeklyData.bestDay,  color: "#E8E4DC", border: "rgba(255,255,255,0.1)" },
                 { label: "📉 Tough Day", value: weeklyData.toughDay, color: "#E8E4DC", border: "rgba(255,255,255,0.1)" },
               ].map((stat, i) => (
-                <div key={i} style={{ backgroundColor: "#0A0A0F", padding: "25px", borderRadius: "16px", flex: "1", minWidth: "150px", border: `1px solid ${stat.border}` }}>
-                  <div style={{ color: "#A09A95", fontSize: "16px", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "1px" }}>{stat.label}</div>
-                  <div style={{ fontSize: i === 0 ? "36px" : "22px", fontWeight: "bold", color: stat.color, marginTop: "10px" }}>{stat.value}</div>
+                <div key={i} className="bg-[#0A0A0F]/80 backdrop-blur-xl p-6 rounded-2xl border" style={{ borderColor: stat.border }}>
+                  <div className="text-[#A09A95] text-xs font-mono uppercase tracking-widest">{stat.label}</div>
+                  <div className="text-2xl sm:text-3xl font-bold mt-2 truncate" style={{ color: stat.color }}>{stat.value}</div>
                 </div>
               ))}
             </div>
 
             {/* Email Summary Extra Card (Only visible for Past Weeks) */}
             {weekOffset > 0 && (
-              <div style={{ backgroundColor: "rgba(200,169,126,0.05)", padding: "30px", borderRadius: "16px", marginBottom: "30px", border: "1px dashed rgba(200,169,126,0.4)" }}>
-                <h3 style={{ margin: "0 0 15px 0", color: "#C8A97E", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "2px", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <div className="bg-[#C8A97E]/5 p-6 sm:p-8 rounded-2xl mb-8 border border-dashed border-[#C8A97E]/30">
+                <h3 className="mb-3 text-[#C8A97E] font-mono uppercase tracking-widest text-xs sm:text-sm flex items-center gap-2">
                   <Mail size={16} /> Past Week's Full Review (Sent to Email)
                 </h3>
-                <p style={{ margin: 0, color: "#E8E4DC", fontSize: "20px", lineHeight: "1.6", whiteSpace: "pre-line", fontStyle: "italic" }}>
+                <p className="text-[#E8E4DC] text-lg sm:text-xl leading-relaxed whitespace-pre-line italic">
                   "{weeklyData.pattern}"
                 </p>
               </div>
             )}
 
             {/* Mood Graph */}
-            <div style={{ backgroundColor: "#0A0A0F", padding: "30px", borderRadius: "16px", marginBottom: "30px", border: "1px solid rgba(168,200,126,0.2)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
-              <h3 style={{ margin: "0 0 30px 0", color: "#A8C87E", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "2px", fontSize: "14px" }}>
+            <div className="bg-[#0A0A0F]/80 backdrop-blur-xl p-6 sm:p-8 rounded-3xl mb-8 border border-[#A8C87E]/20 shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
+              <h3 className="mb-6 text-[#A8C87E] font-mono uppercase tracking-widest text-xs sm:text-sm">
                 📊 Your Mood Graph
               </h3>
-              <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: "220px", gap: "10px", paddingTop: "20px" }}>
+              <div className="flex items-flex-end justify-between items-end h-[220px] gap-1 sm:gap-3 md:gap-4 pt-4 overflow-x-auto pb-2">
                 {weeklyData.graph.map((item, i) => (
-                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1 }}>
-                    <div style={{ fontSize: "28px", marginBottom: "10px", filter: "drop-shadow(0 0 5px rgba(255,255,255,0.2))" }}>
+                  <div key={i} className="flex flex-col items-center flex-1 min-w-[36px]">
+                    <div className="text-2xl sm:text-3xl mb-2 drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">
                       {item.emoji}
                     </div>
-                    <div style={{
-                      width: "100%", maxWidth: "35px",
-                      height: `${Math.max((item.score / 5) * 120, 10)}px`,
-                      backgroundColor: item.score >= 4 ? "#A8C87E" : item.score === 3 ? "#C8A97E" : "#ef4444",
-                      opacity: 0.8, borderRadius: "6px 6px 0 0",
-                      transition: "height 1s ease-out"
-                    }} />
-                    <div style={{ marginTop: "12px", fontFamily: "'DM Mono', monospace", fontSize: "12px", color: "#E8E4DC", fontWeight: "bold" }}>{item.score}/5</div>
-                    <div style={{ marginTop: "4px", textAlign: "center" }}>
-                      <div style={{ fontSize: "11px", color: "#A8C87E", fontFamily: "'DM Mono', monospace", textTransform: "uppercase" }}>{item.day}</div>
-                      <div style={{ fontSize: "11px", color: "#A09A95" }}>{item.date}</div>
+                    <div 
+                      className="w-full max-w-[36px] rounded-t-lg transition-all duration-700 opacity-85 hover:opacity-100"
+                      style={{
+                        height: `${Math.max((item.score / 5) * 110, 12)}px`,
+                        backgroundColor: item.score >= 4 ? "#A8C87E" : item.score === 3 ? "#C8A97E" : "#ef4444"
+                      }} 
+                    />
+                    <div className="mt-2 font-mono text-[11px] sm:text-xs text-[#E8E4DC] font-bold">{item.score}/5</div>
+                    <div className="mt-1 text-center">
+                      <div className="text-[10px] sm:text-[11px] text-[#A8C87E] font-mono uppercase">{item.day}</div>
+                      <div className="text-[9px] sm:text-[10px] text-[#A09A95]">{item.date}</div>
                     </div>
                   </div>
                 ))}
@@ -468,21 +481,21 @@ export default function WeeklyAaina({ currentUser }) {
 
             {/* Mood Pattern (Visible in Current Week) */}
             {weekOffset === 0 && (
-              <div style={{ backgroundColor: "#0A0A0F", padding: "30px", borderRadius: "16px", marginBottom: "30px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                <h3 style={{ margin: "0 0 15px 0", color: "#C8A97E", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "2px", fontSize: "14px" }}>🧩 Your Mood Pattern</h3>
-                <p style={{ margin: 0, color: "#E8E4DC", fontSize: "20px", lineHeight: "1.6", whiteSpace: "pre-line" }}>{weeklyData.pattern}</p>
+              <div className="bg-[#0A0A0F]/80 backdrop-blur-xl p-6 sm:p-8 rounded-2xl mb-8 border border-white/5">
+                <h3 className="mb-3 text-[#C8A97E] font-mono uppercase tracking-widest text-xs sm:text-sm">🧩 Your Mood Pattern</h3>
+                <p className="text-[#E8E4DC] text-lg sm:text-xl leading-relaxed whitespace-pre-line">{weeklyData.pattern}</p>
               </div>
             )}
 
             {/* Tip + Sathi Note */}
-            <div style={{ display: "flex", gap: "20px", margin: "30px 0", flexWrap: "wrap" }}>
-              <div style={{ backgroundColor: "rgba(168,200,126,0.05)", padding: "30px", borderRadius: "16px", flex: "1", minWidth: "280px", border: "1px dashed rgba(168,200,126,0.3)" }}>
-                <h4 style={{ margin: "0 0 15px 0", color: "#A8C87E", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "2px", fontSize: "14px" }}>💡 Actionable Tip</h4>
-                <p style={{ margin: 0, fontSize: "20px", color: "#E8E4DC", fontStyle: "italic", lineHeight: "1.5", whiteSpace: "pre-line" }}>"{weeklyData.oneTip}"</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-8">
+              <div className="bg-[#A8C87E]/5 p-6 sm:p-8 rounded-2xl border border-dashed border-[#A8C87E]/30">
+                <h4 className="mb-3 text-[#A8C87E] font-mono uppercase tracking-widest text-xs sm:text-sm">💡 Actionable Tip</h4>
+                <p className="text-lg sm:text-xl text-[#E8E4DC] italic leading-relaxed whitespace-pre-line">"{weeklyData.oneTip}"</p>
               </div>
-              <div style={{ backgroundColor: "#0A0A0F", padding: "30px", borderRadius: "16px", flex: "1", minWidth: "280px", border: "1px solid rgba(200,169,126,0.2)" }}>
-                <h4 style={{ margin: "0 0 15px 0", color: "#C8A97E", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "2px", fontSize: "14px" }}>🤖 Sathi's Note</h4>
-                <p style={{ margin: 0, fontSize: "18px", lineHeight: "1.6", color: "#A09A95", whiteSpace: "pre-line" }}>{weeklyData.sathiNote}</p>
+              <div className="bg-[#0A0A0F]/80 backdrop-blur-xl p-6 sm:p-8 rounded-2xl border border-[#C8A97E]/20">
+                <h4 className="mb-3 text-[#C8A97E] font-mono uppercase tracking-widest text-xs sm:text-sm">🤖 Sathi's Note</h4>
+                <p className="text-base sm:text-lg leading-relaxed text-[#A09A95] whitespace-pre-line">{weeklyData.sathiNote}</p>
               </div>
             </div>
           </>

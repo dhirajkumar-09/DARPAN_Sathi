@@ -39,14 +39,16 @@ export default function NotificationCard({ notification, onMarkAsRead, onDelete 
       </div>
 
       <button
+        type="button"
         onClick={(e) => { 
           e.stopPropagation();
           onDelete(notification.id); 
         }}
-        className="absolute top-1/2 -translate-y-1/2 right-3 text-[#5A5550] hover:text-red-400 transition-colors p-1.5 rounded-full hover:bg-red-400/10 opacity-0 group-hover:opacity-100"
+        className="absolute top-1/2 -translate-y-1/2 right-2.5 text-[#5A5550] hover:text-red-400 transition-colors p-1.5 rounded-full hover:bg-red-400/10 opacity-60 sm:opacity-0 group-hover:opacity-100 cursor-pointer"
         title="Delete Notification"
+        aria-label="Delete Notification"
       >
-        <Trash2 size={16} />
+        <Trash2 size={15} />
       </button>
     </div>
   );

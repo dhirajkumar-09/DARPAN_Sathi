@@ -3,7 +3,7 @@ import {
   MessageSquare, Sparkles, Brain, Shield, ArrowRight, Play, Check, LogOut, 
   Send, RefreshCw, Loader2, User, BarChart, Calendar, Lightbulb, TrendingUp,
   Mic, MicOff, Volume2, VolumeX, Star, MessageCircle, X, ChevronLeft, ChevronRight,
-  Camera, Mail, BookOpen, Building , Lock, Globe, Trash2 , Share2 ,Heart, Eye, EyeOff
+  Camera, Mail, BookOpen, Building , Lock, Globe, Trash2 , Share2 ,Heart, Eye, EyeOff, Menu
 } from "lucide-react";
 import emailjs from '@emailjs/browser';
 import WeeklyAaina from './WeeklyAaina';
@@ -67,17 +67,21 @@ const CustomCursor = ({ isMobile }) => {
     
     const handleMouse = (e) => {
       if (cursorRef.current && dotRef.current) {
+        cursorRef.current.style.opacity = '1';
         cursorRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+        dotRef.current.style.opacity = '1';
         dotRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
         
         const ringElement = cursorRef.current.firstChild;
         if (ringElement) {
           if (isHovering) {
              ringElement.style.transform = 'scale(1.8)';
-             ringElement.style.backgroundColor = 'rgba(200,169,126,0.1)';
+             ringElement.style.backgroundColor = 'rgba(200,169,126,0.15)';
+             ringElement.style.borderColor = 'rgba(200,169,126,0.9)';
           } else {
              ringElement.style.transform = 'scale(1)';
              ringElement.style.backgroundColor = 'transparent';
+             ringElement.style.borderColor = 'rgba(200,169,126,0.6)';
           }
         }
       }
@@ -88,15 +92,31 @@ const CustomCursor = ({ isMobile }) => {
       }
     };
     const handleMouseOut = () => isHovering = false;
+    const handleMouseLeave = () => {
+      if (cursorRef.current && dotRef.current) {
+        cursorRef.current.style.opacity = '0';
+        dotRef.current.style.opacity = '0';
+      }
+    };
+    const handleMouseEnter = () => {
+      if (cursorRef.current && dotRef.current) {
+        cursorRef.current.style.opacity = '1';
+        dotRef.current.style.opacity = '1';
+      }
+    };
 
     window.addEventListener("mousemove", handleMouse);
     document.addEventListener("mouseover", handleMouseOver);
     document.addEventListener("mouseout", handleMouseOut);
+    document.addEventListener("mouseleave", handleMouseLeave);
+    document.addEventListener("mouseenter", handleMouseEnter);
     
     return () => {
       window.removeEventListener("mousemove", handleMouse);
       document.removeEventListener("mouseover", handleMouseOver);
       document.removeEventListener("mouseout", handleMouseOut);
+      document.removeEventListener("mouseleave", handleMouseLeave);
+      document.removeEventListener("mouseenter", handleMouseEnter);
     };
   }, [isMobile]);
 
@@ -104,26 +124,33 @@ const CustomCursor = ({ isMobile }) => {
 
   return (
     <>
-      <div ref={cursorRef} className="fixed top-0 left-0 z-[99999]" style={{ pointerEvents: 'none' }}>
+      <div ref={cursorRef} className="fixed top-0 left-0 z-[99999] opacity-0 transition-opacity duration-150" style={{ pointerEvents: 'none' }}>
          <div className="rounded-full border border-[#C8A97E]/60 w-8 h-8 -ml-4 -mt-4 transition-all duration-200 ease-out" style={{ pointerEvents: 'none', animation: "cursorPulse 2s ease-in-out infinite" }} />
       </div>
-      <div ref={dotRef} className="fixed top-0 left-0 z-[99999]" style={{ pointerEvents: 'none' }}>
-         <div className="rounded-full bg-[#C8A97E] w-2 h-2 -ml-1 -mt-1" style={{ pointerEvents: 'none' }} />
+      <div ref={dotRef} className="fixed top-0 left-0 z-[99999] opacity-0 transition-opacity duration-150" style={{ pointerEvents: 'none' }}>
+         <div className="rounded-full bg-[#C8A97E] w-2 h-2 -ml-1 -mt-1 shadow-[0_0_8px_rgba(200,169,126,0.8)]" style={{ pointerEvents: 'none' }} />
       </div>
     </>
   );
 };
 
-const Navbar = ({ currentPage, setPage, isLoggedIn, setIsLoggedIn, profile,notifications = [] }) => {
+const Navbar = ({ currentPage, setPage, isLoggedIn, setIsLoggedIn, profile, notifications = [] }) => {
   const [scrollY, setScrollY] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [currentPage]);
+
   const handleLogout = async () => {
     try {
+      setMobileMenuOpen(false);
       await signOut(auth);
       setIsLoggedIn(false);
       setPage("landing");
@@ -133,30 +160,67 @@ const Navbar = ({ currentPage, setPage, isLoggedIn, setIsLoggedIn, profile,notif
   };
 
   return (
-    <nav className={`fixed top-0 inset-x-0 z-[100] px-6 md:px-12 lg:px-20 h-20 flex items-center justify-between transition-all duration-300 ${
-      scrollY > 50 ? "bg-[#06060A]/90 backdrop-blur-md border-b border-[#C8A97E]/10 py-0" : "bg-transparent py-4"
-    }`}>
-      <div className="font-serif text-2xl font-bold tracking-[0.2em] text-[#E8E4DC] cursor-pointer" onClick={() => setPage(isLoggedIn ? "home" : "landing")}>
-        DARP<span className="text-[#C8A97E]">AN</span>
-      </div>
-      <div className="hidden md:flex items-center gap-8">
-        {isLoggedIn ? (
-          <>
-            {NAV_LINKS.map(link => (
-              <button key={link.id} onClick={() => setPage(link.id)}
-                className={`font-mono text-[11px] tracking-widest uppercase transition-all duration-300 cursor-pointer ${
-                  link.id === "chat" ? "font-bold text-[#C8A97E] bg-[#C8A97E]/10 px-4 py-2 rounded-md hover:bg-[#C8A97E] hover:text-black shadow-[0_0_15px_rgba(200,169,126,0.15)] border border-[#C8A97E]/30"
-                  : link.id === "report" ? "font-bold text-[#A8C87E] bg-[#A8C87E]/5 px-4 py-2 rounded-md hover:bg-[#A8C87E] hover:text-black shadow-[0_0_15px_rgba(168,200,126,0.1)] border border-[#A8C87E]/30"
-                  : currentPage === link.id ? "text-[#C8A97E]" : "text-[#8A8580] hover:text-[#C8A97E]"
-                }`}
-              >
-                {link.label}
+    <>
+      <nav className={`fixed top-0 inset-x-0 z-[100] px-4 sm:px-8 md:px-12 lg:px-20 h-20 flex items-center justify-between transition-all duration-300 ${
+        scrollY > 20 || mobileMenuOpen ? "bg-[#06060A]/95 backdrop-blur-xl border-b border-[#C8A97E]/15 shadow-lg" : "bg-transparent py-4"
+      }`}>
+        <div 
+          className="font-serif text-2xl font-bold tracking-[0.2em] text-[#E8E4DC] cursor-pointer hover:opacity-90 transition-opacity flex items-center gap-2" 
+          onClick={() => setPage(isLoggedIn ? "home" : "landing")}
+        >
+          <span>DARP<span className="text-[#C8A97E]">AN</span></span>
+        </div>
+
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center gap-8">
+          {isLoggedIn ? (
+            <>
+              {NAV_LINKS.map(link => (
+                <button key={link.id} onClick={() => setPage(link.id)}
+                  className={`font-mono text-[11px] tracking-widest uppercase transition-all duration-300 cursor-pointer ${
+                    link.id === "chat" ? "font-bold text-[#C8A97E] bg-[#C8A97E]/10 px-4 py-2 rounded-md hover:bg-[#C8A97E] hover:text-black shadow-[0_0_15px_rgba(200,169,126,0.15)] border border-[#C8A97E]/30"
+                    : link.id === "report" ? "font-bold text-[#A8C87E] bg-[#A8C87E]/5 px-4 py-2 rounded-md hover:bg-[#A8C87E] hover:text-black shadow-[0_0_15px_rgba(168,200,126,0.1)] border border-[#A8C87E]/30"
+                    : currentPage === link.id ? "text-[#C8A97E] font-bold" : "text-[#8A8580] hover:text-[#C8A97E]"
+                  }`}
+                >
+                  {link.label}
+                </button>
+              ))}
+              
+              <div className="flex items-center gap-4 border-l border-white/10 pl-6">
+                <div onClick={() => setPage("profile")} className="w-8 h-8 rounded-full border border-[#C8A97E]/40 overflow-hidden cursor-pointer hover:border-[#C8A97E] transition-all shadow-sm" title="My Profile">
+                  {profile.photoURL ? (
+                    <img src={profile.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-[#141419] flex items-center justify-center font-serif font-bold text-xs text-[#C8A97E]">
+                      {profile.name ? profile.name.charAt(0).toUpperCase() : "S"}
+                    </div>
+                  )}
+                </div>
+
+                <NotificationBell notifications={notifications} />
+
+                <button onClick={handleLogout} className="font-mono flex items-center gap-2 text-[10px] tracking-widest px-4 py-2 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-black transition-all duration-300 uppercase cursor-pointer rounded-lg">
+                  <LogOut className="w-3.5 h-3.5" /> Logout
+                </button>
+              </div>
+            </>
+          ) : (
+            currentPage !== "login" && (
+              <button onClick={() => setPage("login")} className="font-mono flex items-center gap-2 text-[11px] font-bold tracking-widest px-6 py-2.5 bg-white/5 border border-white/10 text-white hover:border-[#C8A97E] hover:text-[#C8A97E] rounded-lg transition-all duration-300 uppercase cursor-pointer shadow-sm">
+                 Log In!
               </button>
-            ))}
-            
-            {/* Yahan se tumhare Profile, Logout aur Bell wala section hai */}
-            <div className="flex items-center gap-4 border-l border-white/10 pl-6">
-              <div onClick={() => setPage("profile")} className="w-8 h-8 rounded-full border border-[#C8A97E]/40 overflow-hidden cursor-pointer hover:border-[#C8A97E] transition-all">
+            )
+          )}
+        </div>
+
+        {/* Mobile Header Right (Bell + Profile + Hamburger) */}
+        <div className="flex md:hidden items-center gap-3">
+          {isLoggedIn ? (
+            <>
+              <NotificationBell notifications={notifications} />
+
+              <div onClick={() => setPage("profile")} className="w-8 h-8 rounded-full border border-[#C8A97E]/50 overflow-hidden cursor-pointer">
                 {profile.photoURL ? (
                   <img src={profile.photoURL} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
@@ -165,25 +229,83 @@ const Navbar = ({ currentPage, setPage, isLoggedIn, setIsLoggedIn, profile,notif
                   </div>
                 )}
               </div>
-              <button onClick={handleLogout} className="font-mono flex items-center gap-2 text-[10px] tracking-widest px-4 py-2 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-black transition-all duration-300 uppercase cursor-pointer">
-                <LogOut className="w-3.5 h-3.5" /> Logout
-              </button>
 
-              {/* 🔥 YAHAN LAGA HAI BELL ICON 🔥 */}
-            {/* 🔥 YAHAN PROP PASS KARO 🔥 */}
-            <NotificationBell notifications={notifications} />
-              
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 text-[#E8E4DC] hover:text-[#C8A97E] transition-colors focus:outline-none cursor-pointer"
+                aria-label="Toggle Menu"
+              >
+                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            </>
+          ) : (
+            currentPage !== "login" && (
+              <button onClick={() => setPage("login")} className="font-mono text-[10px] font-bold tracking-widest px-4 py-2 bg-[#C8A97E] text-black rounded-lg uppercase cursor-pointer">
+                 Log In
+              </button>
+            )
+          )}
+        </div>
+      </nav>
+
+      {/* Mobile Slide-down Menu Drawer */}
+      {isLoggedIn && mobileMenuOpen && (
+        <div className="fixed inset-x-0 top-20 z-[95] bg-[#0A0A0F]/95 backdrop-blur-2xl border-b border-[#C8A97E]/20 p-6 shadow-2xl flex flex-col gap-4 animate-fade-in md:hidden">
+          <div className="flex items-center gap-3 p-3 bg-white/[0.03] rounded-xl border border-white/5">
+            <div className="w-10 h-10 rounded-full border border-[#C8A97E]/60 overflow-hidden shrink-0">
+              {profile.photoURL ? (
+                <img src={profile.photoURL} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-[#141419] flex items-center justify-center font-serif font-bold text-sm text-[#C8A97E]">
+                  {profile.name ? profile.name.charAt(0).toUpperCase() : "S"}
+                </div>
+              )}
             </div>
-          </>
-        ) : (
-          currentPage !== "login" && (
-            <button onClick={() => setPage("login")} className="font-mono flex items-center gap-2 text-[11px] font-bold tracking-widest px-6 py-2.5 bg-white/5 border border-white/10 text-white hover:border-[#C8A97E] hover:text-[#C8A97E] rounded-lg transition-all duration-300 uppercase cursor-pointer">
-               Log In!
+            <div className="overflow-hidden flex-1">
+              <div className="font-serif text-[#E8E4DC] text-base font-semibold truncate">{profile.name || "Student"}</div>
+              <div className="font-mono text-[10px] text-[#8A8580] truncate">{profile.email || "Darpan Space"}</div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 pt-2">
+            {NAV_LINKS.map(link => (
+              <button
+                key={link.id}
+                onClick={() => { setPage(link.id); setMobileMenuOpen(false); }}
+                className={`w-full text-left px-4 py-3 rounded-xl font-mono text-xs uppercase tracking-widest transition-all flex items-center justify-between cursor-pointer ${
+                  currentPage === link.id
+                    ? "bg-[#C8A97E]/20 text-[#C8A97E] border border-[#C8A97E]/40 font-bold"
+                    : "text-[#A09A95] hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                <span>{link.label}</span>
+                {link.id === "chat" && <span className="text-[10px] text-[#C8A97E] bg-[#C8A97E]/10 px-2 py-0.5 rounded-full border border-[#C8A97E]/30">AI</span>}
+                {link.id === "report" && <span className="text-[10px] text-[#A8C87E] bg-[#A8C87E]/10 px-2 py-0.5 rounded-full border border-[#A8C87E]/30">Insights</span>}
+              </button>
+            ))}
+
+            <button
+              onClick={() => { setPage("profile"); setMobileMenuOpen(false); }}
+              className={`w-full text-left px-4 py-3 rounded-xl font-mono text-xs uppercase tracking-widest transition-all cursor-pointer ${
+                currentPage === "profile" ? "bg-[#C8A97E]/20 text-[#C8A97E] font-bold" : "text-[#A09A95] hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              My Profile & Settings
             </button>
-          )
-        )}
-      </div>
-    </nav>
+          </div>
+
+          <div className="pt-3 border-t border-white/5">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-red-500/30 text-red-400 font-mono text-xs uppercase tracking-widest hover:bg-red-500 hover:text-black transition-colors cursor-pointer"
+            >
+              <LogOut size={14} /> Log Out
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 const Footer = () => {
@@ -328,6 +450,7 @@ const ChatPage = ({ messages, setMessages }) => {
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
   const audioSourceRef = useRef(null);
+  const textareaRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -337,138 +460,139 @@ const ChatPage = ({ messages, setMessages }) => {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  // Text-to-Speech Logic
+  // Clean up any ongoing TTS / STT when component unmounts
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (e) {}
+      }
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      if (audioSourceRef.current) {
+        try { audioSourceRef.current.stop(); } catch (e) {}
+      }
+    };
+  }, []);
+
+  // Safe HTML sanitation to prevent XSS while allowing markdown formatting
+  const formatMessageText = (text) => {
+    if (!text) return "";
+    const sanitized = text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+    return sanitized
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br/>');
+  };
+
+  // Text-to-Speech Logic with voice safety
   const speakText = (text) => {
     if (!isAudioOutputEnabled) return;
 
     if (!window.speechSynthesis) {
-      console.error("Browser does not support Text-to-Speech functionality.");
+      console.warn("Browser does not support Text-to-Speech functionality.");
       return;
     }
 
     window.speechSynthesis.cancel();
 
     setTimeout(() => {
-      const utterance = new SpeechSynthesisUtterance(text);
-      
+      const cleanText = text
+        .replace(/\*/g, '')
+        .replace(/[\u{1F600}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+        .trim();
+
+      if (!cleanText) return;
+
+      const utterance = new SpeechSynthesisUtterance(cleanText);
       const voices = window.speechSynthesis.getVoices();
-      const bestVoice = voices.find(v => v.lang === 'hi-IN') || voices.find(v => v.lang === 'en-IN');
+      const bestVoice = voices.find(v => v.lang === 'hi-IN') || voices.find(v => v.lang === 'en-IN') || voices.find(v => v.lang.startsWith('en'));
 
       if (bestVoice) {
         utterance.voice = bestVoice;
       }
 
-      utterance.rate = 0.9;   
+      utterance.rate = 0.95;   
       utterance.pitch = 1.0;  
       utterance.lang = 'hi-IN'; 
 
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => setIsSpeaking(false);
       utterance.onerror = (event) => {
-        console.error("Voice synthesis error:", event.error);
+        console.warn("Voice synthesis error:", event.error);
         setIsSpeaking(false);
       };
 
       window.speechSynthesis.speak(utterance);
-    }, 100); 
+    }, 120); 
   };
 
-  // Speech-to-Text Logic
-  const handleVoiceInput = () => {
+  // Unified Speech-to-Text Toggle
+  const toggleRecording = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
-      alert("Your browser does not support Voice Input. Please use Google Chrome or Microsoft Edge.");
+      alert("Voice input is not supported in this browser. Please try Google Chrome or Microsoft Edge.");
       return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-IN'; 
-    recognition.continuous = false; 
-    recognition.interimResults = false; 
-
-    recognition.onstart = () => setIsRecording(true);
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setInputValue(transcript);
-    };
-
-    recognition.onerror = (event) => {
-      console.error("Microphone error:", event.error);
-      setIsRecording(false);
-      if (event.error === 'not-allowed') {
-        alert("Microphone access blocked. Please allow microphone permissions in your browser URL bar.");
-      }
-    };
-
-    recognition.onend = () => setIsRecording(false);
-    recognition.start();
-  };
-
-  const toggleRecording = () => {
-    if (!recognitionRef.current) {
-      alert("Voice input is not supported in your browser. Please try Chrome or Edge.");
-      return;
-    }
     if (isRecording) {
-      try { recognitionRef.current.stop(); } catch(e) {}
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (e) {}
+      }
       setIsRecording(false);
-    } else {
-      if (audioSourceRef.current) audioSourceRef.current.stop();
-      try {
-        recognitionRef.current.start();
-        setIsRecording(true);
-      } catch (e) {
-        console.error("Microphone already active", e);
-      }
+      return;
     }
-  };
 
-  const playSathiVoice = async (text) => {
-    if (!isAudioOutputEnabled) return;
-    if (audioSourceRef.current) audioSourceRef.current.stop();
-    
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    if (audioSourceRef.current) {
+      try { audioSourceRef.current.stop(); } catch (e) {}
+    }
+    setIsSpeaking(false);
+
     try {
-      setIsSpeaking(true);
-      const response = await fetch("https://dapan-api-secure.onrender.com/api/voice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: text })
-      });
-      const data = await response.json();
-      const inlineData = data.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-      
-      if (inlineData) {
-        const base64PCM = inlineData.data;
-        const binaryString = window.atob(base64PCM);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-        
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const audioBuffer = audioCtx.createBuffer(1, bytes.buffer.byteLength / 2, 24000);
-        const channelData = audioBuffer.getChannelData(0);
-        const dataView = new DataView(bytes.buffer);
-        for (let i = 0; i < channelData.length; i++) channelData[i] = dataView.getInt16(i * 2, true) / 32768.0;
-        
-        const source = audioCtx.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioCtx.destination);
-        source.onended = () => setIsSpeaking(false);
-        
-        audioSourceRef.current = source;
-        source.start();
-      } else {
-         setIsSpeaking(false);
-      }
-    } catch (error) {
-      console.error("TTS generation failed:", error);
-      setIsSpeaking(false);
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-IN'; 
+      recognition.continuous = false; 
+      recognition.interimResults = false; 
+
+      recognition.onstart = () => setIsRecording(true);
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setInputValue(prev => prev ? `${prev} ${transcript}` : transcript);
+      };
+
+      recognition.onerror = (event) => {
+        console.error("Microphone error:", event.error);
+        setIsRecording(false);
+        if (event.error === 'not-allowed') {
+          alert("Microphone access was blocked. Please allow microphone permissions in your browser URL bar.");
+        }
+      };
+
+      recognition.onend = () => setIsRecording(false);
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.error("Failed to start speech recognition:", err);
+      setIsRecording(false);
     }
   };
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isTyping) return;      
+
+    // Stop recording if active
+    if (isRecording && recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch (e) {}
+      setIsRecording(false);
+    }
 
     const currentText  = inputValue.trim();
     const userMessage  = { role: "user", parts: [{ text: currentText }] };
@@ -518,9 +642,7 @@ const ChatPage = ({ messages, setMessages }) => {
       if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
         const botReplyText = data.candidates[0].content.parts[0].text;
         setMessages(prev => [...prev, { role: "model", parts: [{ text: botReplyText }] }]);
-        speakText(
-          botReplyText.replace(/\*/g, '').replace(/[\u{1F600}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
-        );
+        speakText(botReplyText);
 
         if (auth.currentUser) {
           try {
@@ -534,13 +656,13 @@ const ChatPage = ({ messages, setMessages }) => {
         }
       } else {
         console.error("Gemini rejected the payload:", data);
-        const fallback = "There seems to be a network issue. Could you please say that again?";
+        const fallback = "There seems to be a connection issue with the server. Could you please share that again?";
         setMessages(prev => [...prev, { role: "model", parts: [{ text: fallback }] }]);
         speakText(fallback);
       }
     } catch (err) {
       console.error("Gemini error:", err);
-      setMessages(prev => [...prev, { role: "model", parts: [{ text: "Connection error. Please try again in a minute." }] }]);
+      setMessages(prev => [...prev, { role: "model", parts: [{ text: "Unable to reach Sathi right now. The server might be waking up; please try again in a moment." }] }]);
     } finally {
       setIsTyping(false);
     }
@@ -559,7 +681,6 @@ const ChatPage = ({ messages, setMessages }) => {
         parts: [{ text: "Namaste! I am Sathi. We've started a fresh session. How are you feeling right now?" }]
     }]);
     
-    // 🔥 FIX: Stop synthesis on chat clear
     if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
     }
@@ -570,35 +691,35 @@ const ChatPage = ({ messages, setMessages }) => {
   };
 
   return (
-    <div className="animate-fade-in pt-24 pb-8 px-4 md:px-12 lg:px-20 min-h-screen flex flex-col relative overflow-hidden">
+    <div className="animate-fade-in pt-24 pb-6 px-3 sm:px-6 md:px-12 lg:px-20 min-h-screen flex flex-col relative overflow-hidden">
        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-30">
         <div className="absolute rounded-full blur-[100px] w-[500px] h-[500px] -left-[10%] -top-[10%] bg-[#C8A97E]/20" />
         <div className="absolute rounded-full blur-[100px] w-[400px] h-[400px] right-[-5%] top-[40%] bg-[#7EB8C8]/20" />
       </div>
 
-      <div className="flex-grow w-full max-w-4xl mx-auto flex flex-col z-10 h-[calc(100vh-140px)]">
-        <div className="bg-[#0A0A0F]/90 backdrop-blur-xl border border-[#C8A97E]/20 rounded-t-2xl p-6 flex justify-between items-center shadow-lg">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#C8A97E] to-[#8A724E] flex items-center justify-center shadow-inner relative overflow-hidden">
-              <span className="font-serif text-2xl font-bold text-black leading-none pt-1 relative z-10">S</span>
-              {isSpeaking && <div className="absolute bottom-0 left-0 w-full bg-black/20 h-full animate-pulse z-0 rounded-full"></div>}
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#0A0A0F] rounded-full z-20"></div>
+      <div className="flex-grow w-full max-w-4xl mx-auto flex flex-col z-10 h-[calc(100dvh-130px)] min-h-[500px]">
+        {/* Header */}
+        <div className="bg-[#0A0A0F]/90 backdrop-blur-xl border border-[#C8A97E]/20 rounded-t-2xl p-4 sm:p-6 flex justify-between items-center shadow-lg">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-[#C8A97E] to-[#8A724E] flex items-center justify-center shadow-inner relative overflow-hidden shrink-0">
+              <span className="font-serif text-xl sm:text-2xl font-bold text-black leading-none pt-0.5 relative z-10">S</span>
+              {isSpeaking && <div className="absolute bottom-0 left-0 w-full bg-black/25 h-full animate-pulse z-0 rounded-full" />}
+              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 border-2 border-[#0A0A0F] rounded-full z-20" />
             </div>
             <div>
-              <h2 className="font-serif text-2xl font-bold text-[#E8E4DC] leading-none mb-1">Sathi</h2>
-              <p className="font-mono text-[10px] tracking-widest text-[#A8C87E] uppercase flex items-center gap-2">
-                {isSpeaking ? "Speaking aloud..." : "AI Companion"} 
+              <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#E8E4DC] leading-none mb-1">Sathi</h2>
+              <p className="font-mono text-[9px] sm:text-[10px] tracking-widest text-[#A8C87E] uppercase flex items-center gap-2">
+                {isSpeaking ? "Speaking aloud..." : "AI Companion · Online"} 
               </p>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
             <button 
+              type="button"
               onClick={() => {
                   const newState = !isAudioOutputEnabled;
                   setIsAudioOutputEnabled(newState);
-                  
-                  // 🔥 THE FIX: Properly stop both browser speech and custom API audio
                   if (!newState && window.speechSynthesis) {
                       window.speechSynthesis.cancel();
                   }
@@ -609,91 +730,107 @@ const ChatPage = ({ messages, setMessages }) => {
                       setIsSpeaking(false);
                   }
               }}
-              className={`font-mono text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-2 border transition-colors cursor-pointer ${
+              className={`font-mono text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-all cursor-pointer ${
                   isAudioOutputEnabled 
                   ? "bg-[#C8A97E]/10 border-[#C8A97E]/30 text-[#C8A97E] hover:bg-[#C8A97E]/20" 
                   : "bg-white/5 border-white/10 text-[#8A8580] hover:bg-white/10"
               }`}
-              title={isAudioOutputEnabled ? "Mute Sathi" : "Unmute Sathi"}
+              title={isAudioOutputEnabled ? "Mute Sathi voice" : "Unmute Sathi voice"}
             >
-              {isAudioOutputEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              {isAudioOutputEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
               <span className="hidden sm:inline">Voice Out</span>
             </button>
-            <button onClick={clearChat} className="text-[#8A8580] hover:text-[#C8A97E] transition-colors p-2 rounded-full hover:bg-white/5 cursor-pointer ml-2" title="Reset Session">
-              <RefreshCw className="w-5 h-5" />
+            <button 
+              type="button"
+              onClick={clearChat} 
+              className="text-[#8A8580] hover:text-[#C8A97E] transition-colors p-2 rounded-full hover:bg-white/5 cursor-pointer ml-1" 
+              title="Reset Conversation"
+            >
+              <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
 
-        <div className="flex-grow bg-[#06060A]/60 backdrop-blur-md border-x border-[#C8A97E]/20 p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6">
+        {/* Messages Stream */}
+        <div className="flex-grow bg-[#06060A]/70 backdrop-blur-md border-x border-[#C8A97E]/20 p-4 sm:p-6 overflow-y-auto custom-scrollbar flex flex-col gap-4 sm:gap-6">
           {messages.map((msg, index) => (
-            <div key={index} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div key={index} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}>
               {msg.role === "model" && (
-                <div className="w-8 h-8 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center mr-3 mt-auto shrink-0 shadow-sm relative overflow-hidden">
-                  <span className="font-serif text-sm font-bold text-[#C8A97E] relative z-10">S</span>
-                  {index === messages.length - 1 && isSpeaking && <div className="absolute bottom-0 w-full bg-[#C8A97E]/30 h-full animate-pulse z-0"></div>}
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center mr-2 sm:mr-3 mt-auto shrink-0 shadow-sm relative overflow-hidden">
+                  <span className="font-serif text-xs sm:text-sm font-bold text-[#C8A97E] relative z-10">S</span>
+                  {index === messages.length - 1 && isSpeaking && <div className="absolute bottom-0 w-full bg-[#C8A97E]/30 h-full animate-pulse z-0" />}
                 </div>
               )}
               
-              <div className={`max-w-[80%] md:max-w-[70%] p-4 text-[15px] md:text-[16px] font-serif leading-relaxed shadow-sm ${
+              <div className={`max-w-[85%] sm:max-w-[75%] p-3.5 sm:p-4 text-[14px] sm:text-[15px] font-serif leading-relaxed shadow-sm ${
                 msg.role === "user" 
-                  ? "bg-gradient-to-br from-[#C8A97E]/10 to-[#8A724E]/20 border border-[#C8A97E]/40 rounded-2xl rounded-br-sm text-[#E8E4DC]" 
-                  : "bg-white/5 border border-white/10 rounded-2xl rounded-bl-sm text-[#C4C0BB]"
+                  ? "bg-gradient-to-br from-[#C8A97E]/15 to-[#8A724E]/20 border border-[#C8A97E]/40 rounded-2xl rounded-br-sm text-[#E8E4DC]" 
+                  : "bg-white/[0.04] border border-white/10 rounded-2xl rounded-bl-sm text-[#C4C0BB]"
               }`}>
-                <span dangerouslySetInnerHTML={{ __html: msg.parts[0].text.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                <span dangerouslySetInnerHTML={{ __html: formatMessageText(msg.parts[0]?.text) }} />
               </div>
 
               {msg.role === "user" && (
-                <div className="w-8 h-8 rounded-full bg-[#1A1A24] border border-white/10 flex items-center justify-center ml-3 mt-auto shrink-0">
-                  <User className="w-4 h-4 text-gray-400" />
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#1A1A24] border border-white/10 flex items-center justify-center ml-2 sm:ml-3 mt-auto shrink-0">
+                  <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
                 </div>
               )}
             </div>
           ))}
           
           {isTyping && (
-            <div className="flex justify-start">
-               <div className="w-8 h-8 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center mr-3 mt-auto shrink-0 shadow-sm">
-                  <span className="font-serif text-sm font-bold text-[#C8A97E]">S</span>
-                </div>
+            <div className="flex justify-start animate-fade-in">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center mr-2 sm:mr-3 mt-auto shrink-0 shadow-sm">
+                <span className="font-serif text-xs sm:text-sm font-bold text-[#C8A97E]">S</span>
+              </div>
               <div className="bg-white/5 border border-white/10 rounded-2xl rounded-bl-sm p-4 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#C8A97E]/40 animate-pulse" />
-                <div className="w-2 h-2 rounded-full bg-[#C8A97E]/40 animate-pulse delay-150" />
-                <div className="w-2 h-2 rounded-full bg-[#C8A97E]/40 animate-pulse delay-300" />
+                <div className="w-2 h-2 rounded-full bg-[#C8A97E]/50 animate-pulse" />
+                <div className="w-2 h-2 rounded-full bg-[#C8A97E]/50 animate-pulse delay-150" />
+                <div className="w-2 h-2 rounded-full bg-[#C8A97E]/50 animate-pulse delay-300" />
               </div>
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="bg-[#0A0A0F]/90 backdrop-blur-xl border border-[#C8A97E]/20 rounded-b-2xl p-4 md:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+        {/* Input Bar */}
+        <div className="bg-[#0A0A0F]/90 backdrop-blur-xl border border-[#C8A97E]/20 rounded-b-2xl p-3 sm:p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
           <div className="relative flex items-center gap-2">
             <button
               type="button"
-              onClick={handleVoiceInput}
-              className={`p-3.5 rounded-xl border transition-all duration-300 cursor-pointer shadow-inner shrink-0 ${
+              onClick={toggleRecording}
+              className={`p-3 sm:p-3.5 rounded-xl border transition-all duration-300 cursor-pointer shadow-inner shrink-0 ${
                 isRecording 
                   ? "bg-red-500/20 border-red-500/50 text-red-400 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.4)]" 
                   : "bg-[#141419] border-white/10 text-[#C8A97E] hover:bg-white/5 hover:border-[#C8A97E]/30"
               }`}
-              title={isRecording ? "Listening to your voice..." : "Click to speak"}
+              title={isRecording ? "Stop listening" : "Click to speak"}
+              aria-label={isRecording ? "Stop voice input" : "Start voice input"}
             >
               {isRecording ? <Mic className="w-5 h-5 animate-bounce" /> : <MicOff className="w-5 h-5" />}
             </button>
             <textarea
+              ref={textareaRef}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder={isRecording ? "Listening carefully..." : "Type your thoughts or use the microphone..."}
-              className={`flex-grow bg-[#141419] border rounded-xl py-4 pl-4 pr-14 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-[16px] focus:outline-none transition-colors resize-none shadow-inner ${
+              placeholder={isRecording ? "Listening carefully... speak now" : "Type your thoughts in Hindi or English, or use the mic..."}
+              className={`flex-grow bg-[#141419] border rounded-xl py-3.5 pl-3.5 pr-12 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-[15px] sm:text-[16px] focus:outline-none transition-colors resize-none shadow-inner custom-scrollbar ${
                   isRecording ? "border-[#C8A97E]/80 border-dashed bg-[#C8A97E]/5" : "border-white/10 focus:border-[#C8A97E]/50"
               }`}
               rows={1}
-              style={{ minHeight: '56px', maxHeight: '150px' }}
+              style={{ minHeight: '52px', maxHeight: '120px' }}
             />
             
-            <button onClick={handleSendMessage} disabled={isTyping || !inputValue.trim()} className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#C8A97E] text-black p-2.5 rounded-lg hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-md">
-              {isTyping ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+            <button 
+              type="button"
+              onClick={handleSendMessage} 
+              disabled={isTyping || !inputValue.trim()} 
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-[#C8A97E] text-black p-2.5 rounded-lg hover:bg-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-md"
+              title="Send message"
+              aria-label="Send message"
+            >
+              {isTyping ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <Send className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
           </div>
         </div>
@@ -714,6 +851,20 @@ const HomePage = ({ setPage, announcement }) => {
   ]);
   const [miniChatInput, setMiniChatInput] = useState("");
   const [isMiniChatLoading, setIsMiniChatLoading] = useState(false);
+  const miniChatEndRef = useRef(null);
+
+  const RATING_LABELS = {
+    1: "Could be better 😔",
+    2: "Needs improvement 😐",
+    3: "Helpful & good 🙂",
+    4: "Really comforting! 😊",
+    5: "Life-changing / loved it! 🌟"
+  };
+
+  // Auto-scroll mini-chat
+  useEffect(() => {
+    miniChatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [miniChatHistory, isMiniChatLoading]);
 
   // Smooth Typing States
   const phrases = React.useMemo(() => [ "Speak your mind.", "Find your calm.", "Hear a warm voice.", "Know yourself better." ], []);
@@ -748,7 +899,7 @@ const HomePage = ({ setPage, announcement }) => {
   const handleMiniChatSend = async () => {
     if (!miniChatInput.trim() || isMiniChatLoading) return;
     
-    const newMessages = [...miniChatHistory, { from: "user", text: miniChatInput }];
+    const newMessages = [...miniChatHistory, { from: "user", text: miniChatInput.trim() }];
     setMiniChatHistory(newMessages);
     setMiniChatInput(""); 
     setIsMiniChatLoading(true);
@@ -788,7 +939,7 @@ const HomePage = ({ setPage, announcement }) => {
       }
     } catch (error) {
       console.error("Mini Chat Error:", error);
-      setMiniChatHistory((prev) => [...prev, { from: "sathi", text: "Unable to connect to the server right now. Please try again." }]);
+      setMiniChatHistory((prev) => [...prev, { from: "sathi", text: "Unable to connect to the server right now. Please try again in a moment." }]);
     } finally {
       setIsMiniChatLoading(false);
     }
@@ -829,7 +980,7 @@ const HomePage = ({ setPage, announcement }) => {
       <section className="relative min-h-[90vh] flex flex-col justify-center pt-32 pb-12 px-6 md:px-12 lg:px-20 overflow-hidden">
         {announcement && (
           <div className="max-w-7xl mx-auto w-full mb-10 relative z-10 animate-fade-in px-4 sm:px-0">
-            <div className="bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/30 rounded-2xl py-6 px-12 md:px-16 shadow-[0_0_40px_rgba(200,169,126,0.1)] relative overflow-hidden group flex flex-col items-center justify-center text-center">
+            <div className="bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/30 rounded-2xl py-6 px-8 sm:px-12 md:px-16 shadow-[0_0_40px_rgba(200,169,126,0.1)] relative overflow-hidden group flex flex-col items-center justify-center text-center">
               
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(200,169,126,0.15)_0%,transparent_70%)] pointer-events-none transition-opacity duration-700 group-hover:opacity-100 opacity-70" />
               
@@ -843,7 +994,7 @@ const HomePage = ({ setPage, announcement }) => {
                 </span>
               </div>
 
-              <p className="relative z-10 font-serif text-xl md:text-3xl text-[#E8E4DC] leading-relaxed max-w-4xl mx-auto font-medium" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
+              <p className="relative z-10 font-serif text-lg sm:text-xl md:text-3xl text-[#E8E4DC] leading-relaxed max-w-4xl mx-auto font-medium" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
                 {announcement}
               </p>
             </div>
@@ -918,6 +1069,7 @@ const HomePage = ({ setPage, announcement }) => {
                     </div>
                   </div>
                 )}
+                <div ref={miniChatEndRef} />
               </div>
               
               {/* Widget Input */}
@@ -935,6 +1087,7 @@ const HomePage = ({ setPage, announcement }) => {
                   onClick={handleMiniChatSend} 
                   disabled={isMiniChatLoading || !miniChatInput.trim()} 
                   className="w-9 h-9 rounded-full bg-[#C8A97E]/10 flex items-center justify-center text-[#C8A97E] hover:bg-[#C8A97E] hover:text-black transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+                  title="Send message to Sathi"
                 >
                   <Send className="w-4 h-4 -ml-0.5" />
                 </button>
@@ -944,35 +1097,69 @@ const HomePage = ({ setPage, announcement }) => {
           </div>
         </div>
 
+        {/* Floating feedback button */}
         <button 
           onClick={() => setIsFeedbackModalOpen(true)} 
-          className="fixed bottom-8 right-8 md:bottom-10 md:right-10 z-[100] bg-[#141419] border border-[#C8A97E]/30 text-[#C8A97E] p-4 rounded-full shadow-[0_0_25px_rgba(200,169,126,0.2)] hover:bg-[#C8A97E] hover:text-black transition-all duration-300 cursor-pointer flex items-center justify-center group"
+          className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-[80] bg-[#141419]/90 backdrop-blur-md border border-[#C8A97E]/40 text-[#C8A97E] p-3.5 sm:p-4 rounded-full shadow-[0_0_25px_rgba(200,169,126,0.25)] hover:bg-[#C8A97E] hover:text-black transition-all duration-300 cursor-pointer flex items-center justify-center group"
+          title="Share Feedback"
         >
-          <MessageCircle className="w-6 h-6 group-hover:scale-110 transition-transform" />
+          <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform" />
         </button>
 
         {isFeedbackModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-            <div className="bg-[#0A0A0F] border border-[#C8A97E]/20 rounded-2xl max-w-md w-full p-8 shadow-2xl relative">
-              <button onClick={() => setIsFeedbackModalOpen(false)} className="absolute top-5 right-5 text-[#8A8580] hover:text-[#C8A97E] transition-colors cursor-pointer">
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+            <div className="bg-[#0A0A0F] border border-[#C8A97E]/30 rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative">
+              <button 
+                onClick={() => setIsFeedbackModalOpen(false)} 
+                className="absolute top-4 right-4 text-[#8A8580] hover:text-[#C8A97E] transition-colors cursor-pointer p-1"
+                aria-label="Close"
+              >
                 <X className="w-5 h-5" />
               </button>
-              <h3 className="font-mono text-[11px] tracking-widest text-[#8A8580] uppercase mb-6">Rate Your Experience</h3>
+              <h3 className="font-mono text-[11px] tracking-widest text-[#8A8580] uppercase mb-4">Rate Your Experience</h3>
               {feedbackStatus === "success" ? (
                  <div className="flex items-center gap-3 text-[#A8C87E] font-serif py-8 text-lg">
                     <div className="w-10 h-10 rounded-full bg-[#A8C87E]/20 flex items-center justify-center shrink-0"><Check className="w-5 h-5" /></div>
                     Thank you for sharing your thoughts with us.
                  </div>
               ) : (
-                <div className="space-y-6">
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star key={star} className={`w-8 h-8 cursor-pointer transition-all duration-200 ${(hoverRating || rating) >= star ? "fill-[#C8A97E] text-[#C8A97E] scale-110" : "text-[#5A5550] hover:text-[#C8A97E]/50"}`} onMouseEnter={() => setHoverRating(star)} onMouseLeave={() => setHoverRating(0)} onClick={() => setRating(star)} />
-                    ))}
+                <div className="space-y-5">
+                  <div>
+                    <div className="flex gap-2 justify-center py-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star 
+                          key={star} 
+                          className={`w-8 h-8 cursor-pointer transition-all duration-200 ${
+                            (hoverRating || rating) >= star 
+                              ? "fill-[#C8A97E] text-[#C8A97E] scale-110" 
+                              : "text-[#5A5550] hover:text-[#C8A97E]/50"
+                          }`} 
+                          onMouseEnter={() => setHoverRating(star)} 
+                          onMouseLeave={() => setHoverRating(0)} 
+                          onClick={() => setRating(star)} 
+                        />
+                      ))}
+                    </div>
+                    {(hoverRating || rating) > 0 && (
+                      <p className="text-center font-mono text-[11px] text-[#C8A97E] tracking-wider mt-1">
+                        {RATING_LABELS[hoverRating || rating]}
+                      </p>
+                    )}
                   </div>
-                  <textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Tell us how Darpan makes you feel...and share your suggestions to make it even better." className="w-full bg-[#141419] border border-white/10 rounded-xl p-4 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-[16px] focus:outline-none focus:border-[#C8A97E]/50 transition-colors resize-none shadow-inner min-h-[120px] custom-scrollbar" />
-                  <button onClick={handleFeedbackSubmit} disabled={(!rating && !feedback.trim()) || feedbackStatus === "submitting"} className="w-full py-4 bg-[#C8A97E] text-black font-mono text-[11px] tracking-widest uppercase font-bold hover:bg-white transition-colors rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-[0_0_15px_rgba(200,169,126,0.2)]">
-                    {feedbackStatus === "submitting" ? <Loader2 className="w-5 h-5 animate-spin" /> : "Quick Feedback!"}
+
+                  <textarea 
+                    value={feedback} 
+                    onChange={(e) => setFeedback(e.target.value)} 
+                    placeholder="Tell us how Darpan makes you feel... and share any suggestions to make it better." 
+                    className="w-full bg-[#141419] border border-white/10 rounded-xl p-4 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-[15px] focus:outline-none focus:border-[#C8A97E]/50 transition-colors resize-none shadow-inner min-h-[120px] custom-scrollbar" 
+                  />
+                  <button 
+                    type="button"
+                    onClick={handleFeedbackSubmit} 
+                    disabled={(!rating && !feedback.trim()) || feedbackStatus === "submitting"} 
+                    className="w-full py-3.5 bg-[#C8A97E] text-black font-mono text-xs tracking-widest uppercase font-bold hover:bg-white transition-colors rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-[0_0_15px_rgba(200,169,126,0.2)]"
+                  >
+                    {feedbackStatus === "submitting" ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Feedback"}
                   </button>
                 </div>
               )}
@@ -1001,7 +1188,9 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
   const ADMIN_EMAIL = "dhidna9090@gmail.com";
 
   useEffect(() => {
-    const handleClickOutside = () => setOpenLikePopupId(null);
+    const handleClickOutside = () => {
+      setOpenLikePopupId(null);
+    };
     window.addEventListener("click", handleClickOutside);
     return () => window.removeEventListener("click", handleClickOutside);
   }, []);
@@ -1030,16 +1219,25 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     setIsSubmitting(true);
     
     try {
-      const checkResponse = await fetch(`${BACKEND_URL}/api/save-story`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storyText: newStory })
-      });
+      // Check content moderation
+      let passedCheck = true;
+      try {
+        const checkResponse = await fetch(`${BACKEND_URL}/api/save-story`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ storyText: newStory })
+        });
+        if (!checkResponse.ok) {
+          const checkData = await checkResponse.json();
+          alert(checkData.error || "Inappropriate words detected!");
+          passedCheck = false;
+        }
+      } catch (backendErr) {
+        console.warn("Backend moderation service unavailable or waking up:", backendErr);
+        // Continue gracefully if backend server is sleeping on Render free tier
+      }
 
-      const checkData = await checkResponse.json();
-
-      if (!checkResponse.ok) {
-        alert(checkData.error || "Inappropriate words detected!");
+      if (!passedCheck) {
         setIsSubmitting(false);
         return;
       }
@@ -1049,7 +1247,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
       const dateString = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
       
       const storyData = {
-        quote: newStory,
+        quote: newStory.trim(),
         name: profile?.name || "Student",
         college: profile?.college || "",
         branch: profile?.branch || "",
@@ -1085,7 +1283,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
 
     } catch (error) { 
       console.error("Error saving story:", error); 
-      alert("Something went wrong while posting.");
+      alert("Something went wrong while posting. Please try again.");
     } finally { 
       setIsSubmitting(false); 
     }
@@ -1227,7 +1425,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
     const parentCommentOwnerId = parentComment?.uid;
 
     const newReply = {
-      id: Date.now().toString(),
+      id: Date.now().toString(), 
       uid: auth.currentUser.uid,
       name: profile?.name || "Student",
       photoURL: profile?.photoURL || null,
@@ -1265,6 +1463,18 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
       setReplyingTo(null); 
     } catch (error) {
       console.error("Error adding reply:", error);
+    }
+  };
+
+  const handleDeleteComment = async (story, commentId) => {
+    if (!auth.currentUser) return;
+    if (!window.confirm("Delete this comment?")) return;
+    const updatedComments = (story.comments || []).filter(c => c.id !== commentId);
+    setUserStories(userStories.map(s => s.id === story.id ? { ...s, comments: updatedComments } : s));
+    try {
+      await updateDoc(doc(db, "stories", story.id), { comments: updatedComments });
+    } catch (err) {
+      console.error("Error deleting comment:", err);
     }
   };
 
@@ -1306,8 +1516,8 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
           })
         }).catch(err => console.error("Backend push failed:", err));
       }
-    } catch (error) {
-      console.error("Error toggling comment like:", error);
+    } catch (error) { 
+      console.error("Error toggling comment like:", error); 
     }
   };
 
@@ -1367,73 +1577,74 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
   const viewingAuthorInfo = sortedAuthorsList.find(a => a.userId === viewingAuthorId);
 
   return (
-    <div className="animate-fade-in pt-32 pb-20 px-6 md:px-12 lg:px-20 min-h-screen">
+    <div className="animate-fade-in pt-28 md:pt-32 pb-20 px-4 sm:px-8 md:px-12 lg:px-20 min-h-screen">
       <div className="max-w-7xl mx-auto">
         <FadeInSection>
-          <div className="text-center mb-16">
-            <div className="font-mono text-xs tracking-[0.3em] text-[#C8A97E] uppercase mb-4">Real Stories</div>
-            <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-light">
+          <div className="text-center mb-12 sm:mb-16">
+            <div className="font-mono text-xs tracking-[0.3em] text-[#C8A97E] uppercase mb-3">Real Stories</div>
+            <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-light">
               Their words. <br />
               <em className="font-bold text-[#C8A97E] not-italic">Their lives, changed.</em>
             </h1>
           </div>
-<div className="max-w-3xl mx-auto mb-16 bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-3xl p-6 md:p-10 shadow-[0_0_40px_rgba(200,169,126,0.05)]">
-              <h3 className="font-serif text-2xl text-[#E8E4DC] mb-2">Share your journey</h3>
-              <p className="font-serif text-[#A09A95] mb-6 text-sm">
-                Your story might be exactly what someone else needs to hear today.
-              </p>
-              <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                <textarea
-                  rows={6}
-                  value={newStory}
-                  onChange={(e) => setNewStory(e.target.value)}
-                  placeholder={`A safe space to share your thoughts , lessons and little victories.\nWrite freely.....!!\nSomeone might find hope in your story...✨`}
-                  className="w-full bg-[#141419] border border-white/10 rounded-2xl p-5 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-lg md:text-xl focus:outline-none focus:border-[#C8A97E]/50 transition-colors resize-y shadow-inner min-h-[200px]"
-                />
-                
-                <div className="flex flex-wrap items-center gap-3">
+
+          <div className="max-w-3xl mx-auto mb-16 bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-3xl p-5 sm:p-8 md:p-10 shadow-[0_0_40px_rgba(200,169,126,0.05)]">
+            <h3 className="font-serif text-xl sm:text-2xl text-[#E8E4DC] mb-1">Share your journey</h3>
+            <p className="font-serif text-[#A09A95] mb-5 text-sm">
+              Your story might be exactly what someone else needs to hear today.
+            </p>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <textarea
+                rows={5}
+                value={newStory}
+                onChange={(e) => setNewStory(e.target.value)}
+                placeholder="A safe space to share your thoughts, lessons and little victories. Write freely... someone might find hope in your story."
+                className="w-full bg-[#141419] border border-white/10 rounded-2xl p-4 sm:p-5 text-[#E8E4DC] placeholder:text-[#5A5550] font-serif text-base sm:text-lg focus:outline-none focus:border-[#C8A97E]/50 transition-colors resize-y shadow-inner min-h-[160px]"
+              />
+              
+              <div className="flex flex-wrap items-center gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => setIsPrivatePost(!isPrivatePost)}
+                  className={`font-mono text-[10px] tracking-widest uppercase flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all border cursor-pointer ${
+                    isPrivatePost ? "bg-white/10 border-white/20 text-[#E8E4DC]" : "bg-[#C8A97E]/10 border-[#C8A97E]/30 text-[#C8A97E] hover:bg-[#C8A97E]/20"
+                  }`}
+                >
+                  {isPrivatePost ? <><Lock className="w-3.5 h-3.5" /> Private Note</> : <><Globe className="w-3.5 h-3.5" /> Share Publicly</>}
+                </button>
+
+                {!isPrivatePost && (
                   <button 
                     type="button" 
-                    onClick={() => setIsPrivatePost(!isPrivatePost)}
-                    className={`font-mono text-[10px] tracking-widest uppercase flex items-center gap-2 px-5 py-3 rounded-xl transition-all border cursor-pointer shadow-sm ${
-                      isPrivatePost ? "bg-white/10 border-white/20 text-[#E8E4DC]" : "bg-[#C8A97E]/10 border-[#C8A97E]/30 text-[#C8A97E] hover:bg-[#C8A97E]/20"
+                    onClick={() => setAllowCommentsPost(!allowCommentsPost)}
+                    className={`font-mono text-[10px] tracking-widest uppercase flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all border cursor-pointer ${
+                      !allowCommentsPost ? "bg-red-500/10 border-red-500/30 text-red-400" : "bg-[#C8A97E]/10 border-[#C8A97E]/30 text-[#C8A97E] hover:bg-[#C8A97E]/20"
                     }`}
                   >
-                    {isPrivatePost ? <><Lock className="w-4 h-4" /> Keep Private Note</> : <><Globe className="w-4 h-4" /> Share Publicly</>}
+                    <MessageCircle className="w-3.5 h-3.5" /> {allowCommentsPost ? "Comments: ON" : "Comments: OFF"}
                   </button>
+                )}
+              </div>
 
-                  {!isPrivatePost && (
-                    <button 
-                      type="button" 
-                      onClick={() => setAllowCommentsPost(!allowCommentsPost)}
-                      className={`font-mono text-[10px] tracking-widest uppercase flex items-center gap-2 px-5 py-3 rounded-xl transition-all border cursor-pointer shadow-sm ${
-                        !allowCommentsPost ? "bg-red-500/10 border-red-500/30 text-red-400" : "bg-[#C8A97E]/10 border-[#C8A97E]/30 text-[#C8A97E] hover:bg-[#C8A97E]/20"
-                      }`}
-                    >
-                      <MessageCircle className="w-4 h-4" /> {allowCommentsPost ? "Comments: ON" : "Comments: OFF"}
-                    </button>
-                  )}
-                </div>
-
-                <div className="flex flex-col sm:flex-row justify-end items-center gap-4 pt-2 border-t border-white/5">
-                  <button 
-                    type="submit"
-                    disabled={isSubmitting || !newStory.trim()}
-                    className="px-8 py-3 bg-[#C8A97E] text-black font-mono text-xs tracking-widest uppercase font-bold hover:bg-white transition-colors rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto cursor-pointer shadow-[0_0_20px_rgba(200,169,126,0.2)]"
-                  >
-                    {isSubmitting ? "Posting..." : "Post Story"} <Send className="w-4 h-4" />
-                  </button>
-                </div>
-              </form>
-            </div>
-          
-<div className="flex flex-col lg:flex-row gap-8 items-start">
-
+              <div className="flex flex-col sm:flex-row justify-end items-center gap-4 pt-2 border-t border-white/5">
+                <button 
+                  type="submit"
+                  disabled={isSubmitting || !newStory.trim()}
+                  className="px-8 py-3 bg-[#C8A97E] text-black font-mono text-xs tracking-widest uppercase font-bold hover:bg-white transition-colors rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto cursor-pointer shadow-[0_0_20px_rgba(200,169,126,0.2)]"
+                >
+                  {isSubmitting ? "Posting..." : "Post Story"} <Send className="w-4 h-4" />
+                </button>
+              </div>
+            </form>
+          </div>
+        
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
             <div className="w-full lg:w-[300px] shrink-0">
-              <div className="bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-3xl p-6 lg:sticky lg:top-28 shadow-[0_0_40px_rgba(200,169,126,0.05)]">
-              <button
+              <div className="bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-3xl p-5 sm:p-6 lg:sticky lg:top-28 shadow-[0_0_40px_rgba(200,169,126,0.05)]">
+                <button
+                  type="button"
                   onClick={handleShowAllStories}
-                  className={`w-full text-left px-5 py-3.5 rounded-2xl font-mono text-[11px] tracking-widest uppercase mb-5 transition-all cursor-pointer ${
+                  className={`w-full text-left px-5 py-3 rounded-2xl font-mono text-[11px] tracking-widest uppercase mb-4 transition-all cursor-pointer ${
                     showingAllStories ? "bg-[#C8A97E] text-black font-bold shadow-[0_0_20px_rgba(200,169,126,0.25)]" : "bg-white/5 text-[#8A8580] hover:bg-white/10"
                   }`}
                 >
@@ -1444,24 +1655,25 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
                   Authors
                 </div>
 
-                <div className="flex flex-col gap-2 max-h-[55vh] overflow-y-auto custom-scrollbar pr-1">
+                <div className="flex flex-col gap-2 max-h-[50vh] overflow-y-auto custom-scrollbar pr-1">
                   {sortedAuthorsList.map((author) => (
                     <button
                       key={author.userId}
+                      type="button"
                       onClick={() => handleSelectAuthor(author.userId)}
-                      className={`flex items-center gap-3 px-3 py-3 rounded-2xl transition-all cursor-pointer text-left border ${
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all cursor-pointer text-left border ${
                         viewingAuthorId === author.userId ? "bg-[#C8A97E]/15 border-[#C8A97E]/40" : "border-transparent hover:bg-white/5"
                       }`}
                     >
                       {author.photoURL ? (
-                        <img src={author.photoURL} alt={author.name} className="w-10 h-10 rounded-full object-cover border-2 border-[#C8A97E]/40 shrink-0" />
+                        <img src={author.photoURL} alt={author.name} className="w-9 h-9 rounded-full object-cover border-2 border-[#C8A97E]/40 shrink-0" />
                       ) : (
-                        <div className="w-10 h-10 rounded-full bg-[#141419] border-2 border-[#C8A97E]/40 flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-[#141419] border-2 border-[#C8A97E]/40 flex items-center justify-center shrink-0">
                           <span className="font-serif text-sm font-bold text-[#C8A97E]">{author.initial}</span>
                         </div>
                       )}
                       <div className="flex flex-col overflow-hidden flex-1">
-                        <span className="font-serif text-[15px] text-[#E8E4DC] truncate flex items-center gap-1.5">
+                        <span className="font-serif text-[14px] text-[#E8E4DC] truncate flex items-center gap-1.5">
                           {author.name}
                           {author.isAdmin && (
                             <span className="font-mono text-[8px] tracking-wider text-[#C8A97E] bg-[#C8A97E]/15 border border-[#C8A97E]/30 rounded-full px-1.5 py-0.5 shrink-0">
@@ -1469,7 +1681,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
                             </span>
                           )}
                         </span>
-                        <span className="font-mono text-[10px] text-[#8A8580] uppercase tracking-wider">
+                        <span className="font-mono text-[9px] text-[#8A8580] uppercase tracking-wider">
                           {author.storyCount} {author.storyCount === 1 ? "story" : "stories"}
                         </span>
                       </div>
@@ -1479,19 +1691,18 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
               </div>
             </div>
 
-            <div className="flex-1 min-w-0">
-
+            <div className="flex-1 min-w-0 w-full">
               {!showingAllStories && viewingAuthorInfo && (
-                <div className="bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-2xl p-5 mb-6 flex items-center gap-4">
+                <div className="bg-[#0A0A0F]/80 backdrop-blur-xl border border-[#C8A97E]/20 rounded-2xl p-4 sm:p-5 mb-6 flex items-center gap-4">
                   {viewingAuthorInfo.photoURL ? (
-                    <img src={viewingAuthorInfo.photoURL} alt={viewingAuthorInfo.name} className="w-14 h-14 rounded-full object-cover border-2 border-[#C8A97E]/60" />
+                    <img src={viewingAuthorInfo.photoURL} alt={viewingAuthorInfo.name} className="w-12 h-12 rounded-full object-cover border-2 border-[#C8A97E]/60" />
                   ) : (
-                    <div className="w-14 h-14 rounded-full bg-[#141419] border-2 border-[#C8A97E]/60 flex items-center justify-center">
-                      <span className="font-serif text-xl font-bold text-[#C8A97E]">{viewingAuthorInfo.initial}</span>
+                    <div className="w-12 h-12 rounded-full bg-[#141419] border-2 border-[#C8A97E]/60 flex items-center justify-center">
+                      <span className="font-serif text-lg font-bold text-[#C8A97E]">{viewingAuthorInfo.initial}</span>
                     </div>
                   )}
                   <div>
-                    <h3 className="font-serif text-xl font-bold text-white flex items-center gap-2">
+                    <h3 className="font-serif text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                       {viewingAuthorInfo.name}
                       {viewingAuthorInfo.isAdmin && (
                         <span className="font-mono text-[8px] tracking-wider text-[#C8A97E] bg-[#C8A97E]/15 border border-[#C8A97E]/30 rounded-full px-2 py-0.5">
@@ -1508,14 +1719,14 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
 
               {sortedFeedStories.length === 0 ? (
                 <div className="text-center py-20 border border-dashed border-[#C8A97E]/20 rounded-3xl bg-white/[0.01]">
-                  <div className="w-20 h-20 mx-auto bg-[#C8A97E]/10 rounded-full flex items-center justify-center mb-6">
-                    <MessageSquare className="w-10 h-10 text-[#C8A97E]" />
+                  <div className="w-16 h-16 mx-auto bg-[#C8A97E]/10 rounded-full flex items-center justify-center mb-4">
+                    <MessageSquare className="w-8 h-8 text-[#C8A97E]" />
                   </div>
                   <h3 className="font-serif text-2xl text-[#E8E4DC] mb-2">The canvas is blank</h3>
                   <p className="font-serif text-[#A09A95]">Be the first to share your journey and inspire others.</p>
                 </div>
               ) : (
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-8">
                   {sortedFeedStories.map((t, i) => {
                     const isMyPost = t.userId === auth.currentUser?.uid;
                     const displayPhoto = isMyPost ? profile?.photoURL : t.photoURL;
@@ -1525,108 +1736,127 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
                     const allowsComments = t.allowComments !== false; 
 
                     const quoteLength = t.quote.length;
-                    let textSizeClass = "text-3xl md:text-4xl lg:text-5xl leading-[1.2]"; 
-                    if (quoteLength > 180) { textSizeClass = "text-lg md:text-xl lg:text-2xl leading-[1.6]"; } 
-                    else if (quoteLength > 80) { textSizeClass = "text-2xl md:text-3xl lg:text-4xl leading-[1.4]"; }
+                    let textSizeClass = "text-2xl sm:text-3xl md:text-4xl leading-[1.3]"; 
+                    if (quoteLength > 180) { textSizeClass = "text-base sm:text-lg md:text-xl leading-[1.6]"; } 
+                    else if (quoteLength > 80) { textSizeClass = "text-xl sm:text-2xl md:text-3xl leading-[1.4]"; }
                     
                     return (
-                      <div key={t.id || i} className={`relative bg-[#0A0A0F] border rounded-[2rem] p-8 md:p-10 flex flex-col transition-all duration-500 overflow-hidden group ${t.isPrivate ? 'border-white/10 opacity-80' : 'border-[#C8A97E]/30 hover:border-[#C8A97E] hover:shadow-[0_0_40px_rgba(200,169,126,0.1)]'}`}>
-                        <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(ellipse_at_center,rgba(200,169,126,0.12)_0%,transparent_70%)]" />
-                        <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: "linear-gradient(#C8A97E 1px, transparent 1px), linear-gradient(90deg, #C8A97E 1px, transparent 1px)", backgroundSize: "30px 30px" }} />
-
-                        <div className="flex items-start justify-between relative z-10 mb-10 border-b border-[#C8A97E]/10 pb-6">
-                          <div className="flex items-center gap-5">
+                      <div key={t.id || i} className={`relative bg-[#0A0A0F] border rounded-3xl p-6 sm:p-8 flex flex-col transition-all duration-300 group ${t.isPrivate ? 'border-white/10 opacity-85' : 'border-[#C8A97E]/30 hover:border-[#C8A97E] hover:shadow-[0_0_40px_rgba(200,169,126,0.1)]'}`}>
+                        
+                        <div className="flex items-start justify-between relative z-10 mb-6 border-b border-[#C8A97E]/10 pb-4">
+                          <div className="flex items-center gap-3 sm:gap-4">
                             {displayPhoto ? (
-                              <div className="w-14 h-14 rounded-full border-2 border-[#C8A97E]/80 p-0.5 shadow-[0_0_15px_rgba(200,169,126,0.2)]">
+                              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full border-2 border-[#C8A97E]/80 p-0.5 shadow-sm shrink-0">
                                  <img src={displayPhoto} alt={displayName} className="w-full h-full rounded-full object-cover" />
                               </div>
                             ) : (
-                              <div className="w-14 h-14 rounded-full border-2 border-[#C8A97E]/80 p-0.5 shadow-[0_0_15px_rgba(200,169,126,0.2)] flex items-center justify-center bg-[#141419]">
-                                <span className="font-serif text-2xl font-bold text-[#C8A97E]">{displayInitial}</span>
+                              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full border-2 border-[#C8A97E]/80 p-0.5 shadow-sm flex items-center justify-center bg-[#141419] shrink-0">
+                                <span className="font-serif text-xl font-bold text-[#C8A97E]">{displayInitial}</span>
                               </div>
                             )}
                             <div>
-                              <div className="font-serif text-2xl font-bold text-white tracking-wide">{displayName}</div>
-                              <div className="flex flex-col gap-1 mt-1.5">
-                               <span className="font-mono text-[9px] tracking-widest text-[#C8A97E] uppercase">
+                              <div className="font-serif text-lg sm:text-xl font-bold text-white tracking-wide">{displayName}</div>
+                              <span className="font-mono text-[9px] tracking-widest text-[#C8A97E] uppercase block mt-0.5">
                                  {t.displayTime ? `SHARED ON ${t.displayTime.toUpperCase()}` : "SHARED JUST NOW"}
-                               </span>
-                              </div>
+                              </span>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2">
-                            {t.isPrivate && <span className="hidden sm:inline-block font-mono text-[9px] uppercase tracking-widest text-[#8A8580] bg-white/5 px-3 py-1.5 rounded-full border border-white/10 mr-2">Private Note</span>}
+                          <div className="flex items-center gap-1.5">
+                            {t.isPrivate && <span className="hidden sm:inline-block font-mono text-[9px] uppercase tracking-widest text-[#8A8580] bg-white/5 px-2.5 py-1 rounded-full border border-white/10 mr-1">Private</span>}
                             {isMyPost && (
                               <>
                                 {!t.isPrivate && (
-                                  <button onClick={() => toggleLikesVisibility(t.id, t.showLikesPublicly)} className={`p-3 rounded-full border transition-all cursor-pointer ${t.showLikesPublicly ? 'bg-[#C8A97E]/10 border-[#C8A97E]/50 text-[#C8A97E]' : 'bg-[#141419] border-white/10 text-[#8A8580] hover:text-[#C8A97E] hover:border-[#C8A97E]/50'}`} title={t.showLikesPublicly ? "Hide Likers from Others" : "Show Likers to Everyone"}>
-                                    {t.showLikesPublicly ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                  <button 
+                                    type="button"
+                                    onClick={() => toggleLikesVisibility(t.id, t.showLikesPublicly)} 
+                                    className={`p-2 rounded-full border transition-all cursor-pointer ${t.showLikesPublicly ? 'bg-[#C8A97E]/10 border-[#C8A97E]/50 text-[#C8A97E]' : 'bg-[#141419] border-white/10 text-[#8A8580] hover:text-[#C8A97E]'}`} 
+                                    title={t.showLikesPublicly ? "Hide Likers from Others" : "Show Likers to Everyone"}
+                                  >
+                                    {t.showLikesPublicly ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                                   </button>
                                 )}
                                 
                                 {!t.isPrivate && (
-                                    <button onClick={() => toggleCommentsStatus(t.id, allowsComments)} className={`p-3 rounded-full border transition-all cursor-pointer ${!allowsComments ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-[#141419] border-white/10 text-[#8A8580] hover:text-[#C8A97E] hover:border-[#C8A97E]/50'}`} title={allowsComments ? "Turn Comments Off" : "Turn Comments On"}>
-                                      <MessageCircle className="w-4 h-4" />
-                                    </button>
+                                  <button 
+                                    type="button"
+                                    onClick={() => toggleCommentsStatus(t.id, allowsComments)} 
+                                    className={`p-2 rounded-full border transition-all cursor-pointer ${!allowsComments ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-[#141419] border-white/10 text-[#8A8580] hover:text-[#C8A97E]'}`} 
+                                    title={allowsComments ? "Turn Comments Off" : "Turn Comments On"}
+                                  >
+                                    <MessageCircle className="w-3.5 h-3.5" />
+                                  </button>
                                 )}
 
-                                <button onClick={() => togglePrivacy(t.id, t.isPrivate)} className="p-3 rounded-full bg-[#141419] border border-white/10 text-[#8A8580] hover:text-[#C8A97E] hover:border-[#C8A97E]/50 transition-all cursor-pointer" title={t.isPrivate ? "Make Public" : "Make Private"}>
-                                  {t.isPrivate ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
+                                <button 
+                                  type="button"
+                                  onClick={() => togglePrivacy(t.id, t.isPrivate)} 
+                                  className="p-2 rounded-full bg-[#141419] border border-white/10 text-[#8A8580] hover:text-[#C8A97E] transition-all cursor-pointer" 
+                                  title={t.isPrivate ? "Make Public" : "Make Private"}
+                                >
+                                  {t.isPrivate ? <Lock className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
                                 </button>
-                                <button onClick={() => deleteStory(t.id)} className="p-3 rounded-full bg-[#141419] border border-white/10 text-[#8A8580] hover:text-red-400 hover:border-red-400/50 transition-all cursor-pointer" title="Delete Story">
-                                  <Trash2 className="w-4 h-4" />
+                                <button 
+                                  type="button"
+                                  onClick={() => deleteStory(t.id)} 
+                                  className="p-2 rounded-full bg-[#141419] border border-white/10 text-[#8A8580] hover:text-red-400 hover:border-red-400/50 transition-all cursor-pointer" 
+                                  title="Delete Story"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </>
                             )}
                             {!isMyPost && (
                               <button 
+                                type="button"
                                 onClick={() => handleBlockUser(t.userId, displayName)} 
-                                className="p-3 rounded-full bg-[#141419] border border-white/10 text-[#8A8580] hover:text-red-400 hover:border-red-400/50 transition-all cursor-pointer" 
+                                className="p-2 rounded-full bg-[#141419] border border-white/10 text-[#8A8580] hover:text-red-400 hover:border-red-400/50 transition-all cursor-pointer" 
                                 title="Block this user"
                               >
-                                <X className="w-4 h-4" />
+                                <X className="w-3.5 h-3.5" />
                               </button>
                             )}
                           </div>
                         </div>
 
-                        <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10 px-2 sm:px-8 pb-8">
-                          <div className="font-serif text-5xl md:text-6xl text-[#C8A97E] leading-none mb-4">"</div>
+                        <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10 px-2 sm:px-6 py-4">
+                          <div className="font-serif text-4xl text-[#C8A97E] leading-none mb-2 opacity-60">"</div>
                           <p className={`font-serif text-[#E8E4DC] font-light ${textSizeClass}`}>"{t.quote}"</p>
                         </div>
 
-                        <div className="flex items-end justify-between mt-auto pt-6 border-t border-white/5 relative z-10">
-                          <div className="font-mono text-[10px] tracking-widest text-[#8A8580] uppercase">
+                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5 relative z-10">
+                          <div className="font-mono text-[9px] sm:text-[10px] tracking-widest text-[#8A8580] uppercase truncate max-w-[50%]">
                             {t.college && t.branch ? `${t.branch}, ${t.college}` : 'Darpan Student'}
                           </div>
                           
                           {!t.isPrivate && (
                             <div className="relative flex items-center gap-2">
-                              
-                              <div className="flex items-center gap-1 bg-white/5 border border-white/10 hover:border-[#C8A97E]/50 hover:bg-[#C8A97E]/10 rounded-full px-3 py-1.5 transition-all">
-                                <button
-                                  onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    setOpenLikePopupId(null);
-                                    setOpenCommentPopupId(openCommentPopupId === t.id ? null : t.id); 
-                                    setReplyingTo(null); 
-                                  }}
-                                  className="cursor-pointer group outline-none flex items-center justify-center"
-                                >
-                                  <MessageSquare className={`w-4 h-4 transition-transform group-hover:scale-110 text-[#8A8580] group-hover:text-[#C8A97E]`} />
-                                </button>
-                                <span className="font-mono text-[10px] font-bold ml-1 text-[#8A8580] cursor-pointer" onClick={() => setOpenCommentPopupId(openCommentPopupId === t.id ? null : t.id)}>
-                                  {t.comments?.length || 0}
-                                </span>
-                              </div>
+                              {/* Comments trigger */}
+                              <button
+                                type="button"
+                                onClick={() => { 
+                                  setOpenCommentPopupId(openCommentPopupId === t.id ? null : t.id); 
+                                  setReplyingTo(null); 
+                                }}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all text-xs font-mono cursor-pointer ${
+                                  openCommentPopupId === t.id 
+                                    ? "bg-[#C8A97E]/20 border-[#C8A97E]/60 text-[#C8A97E]" 
+                                    : "bg-white/5 border-white/10 text-[#8A8580] hover:text-[#C8A97E] hover:border-[#C8A97E]/40"
+                                }`}
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                <span className="font-bold">{t.comments?.length || 0}</span>
+                              </button>
 
-                              <div className="flex items-center gap-1 bg-white/5 border border-white/10 hover:border-[#C8A97E]/50 hover:bg-[#C8A97E]/10 rounded-full px-3 py-1.5 transition-all">
+                              {/* Likes trigger */}
+                              <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-2.5 py-1.5">
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); toggleLike(t); }}
-                                  className="cursor-pointer group outline-none flex items-center justify-center"
+                                  type="button"
+                                  onClick={() => toggleLike(t)}
+                                  className="cursor-pointer group flex items-center justify-center"
+                                  title="Like this story"
                                 >
-                                  <Heart className={`w-4 h-4 transition-transform group-hover:scale-110 ${
+                                  <Heart className={`w-3.5 h-3.5 transition-transform group-hover:scale-110 ${
                                     t.likes?.some(like => typeof like === 'string' ? like === auth.currentUser?.uid : like.uid === auth.currentUser?.uid)
                                     ? 'fill-[#C8A97E] text-[#C8A97E]'
                                     : 'text-[#8A8580] group-hover:text-[#C8A97E]'
@@ -1634,16 +1864,16 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
                                 </button>
 
                                 <button
+                                  type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setOpenCommentPopupId(null);
                                     if (openLikePopupId === t.id) {
                                       setOpenLikePopupId(null);
                                     } else if ((isMyPost || t.showLikesPublicly) && t.likes?.length > 0) {
                                       setOpenLikePopupId(t.id);
                                     }
                                   }}
-                                  className={`font-mono text-[10px] font-bold ml-1 outline-none transition-all ${
+                                  className={`font-mono text-[10px] font-bold ml-1 transition-all ${
                                     ((isMyPost || t.showLikesPublicly) && t.likes?.length > 0) ? 'cursor-pointer hover:underline hover:text-[#C8A97E]' : 'cursor-default'
                                   } ${
                                     t.likes?.some(like => typeof like === 'string' ? like === auth.currentUser?.uid : like.uid === auth.currentUser?.uid)
@@ -1654,6 +1884,7 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
                                 </button>
                               </div>
 
+                              {/* Likes popup */}
                               {openLikePopupId === t.id && (
                                 <div 
                                   className="absolute bottom-full right-0 mb-3 w-[260px] bg-[#0A0A0F] border border-[#C8A97E]/30 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] z-50 animate-fade-in"
@@ -1666,159 +1897,165 @@ const StoriesPage = ({ userStories, setUserStories, profile }) => {
                                     </button>
                                   </div>
 
-                                  <div className="max-h-[220px] overflow-y-auto custom-scrollbar p-2 flex flex-col gap-1">
+                                  <div className="max-h-[200px] overflow-y-auto custom-scrollbar p-2 flex flex-col gap-1">
                                     {t.likes.map((likeData, idx) => {
                                       const isOldData = typeof likeData === 'string';
                                       const likeUid = isOldData ? likeData : likeData.uid;
-                                      
                                       const isMyLike = likeUid === auth.currentUser?.uid;
                                       const likerName = isMyLike ? (profile?.name || "Student") : (isOldData ? "Darpan User" : likeData.name);
                                       const likerPhoto = isMyLike ? profile?.photoURL : (isOldData ? null : likeData.photoURL);
-                                      const likerCollege = isMyLike ? (profile?.college ? `${profile.college}, ${profile.branch || ''}` : "") : (isOldData ? "" : likeData.college);
 
                                       return (
-                                        <div key={idx} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors">
+                                        <div key={idx} className="flex items-center gap-2.5 p-1.5 hover:bg-white/5 rounded-lg transition-colors">
                                           {likerPhoto ? (
-                                            <img src={likerPhoto} alt={likerName} className="w-8 h-8 rounded-full object-cover border border-[#C8A97E]/30" />
+                                            <img src={likerPhoto} alt={likerName} className="w-7 h-7 rounded-full object-cover border border-[#C8A97E]/30" />
                                           ) : (
-                                            <div className="w-8 h-8 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center shrink-0">
-                                              <span className="font-serif text-sm font-bold text-[#C8A97E]">{likerName.charAt(0).toUpperCase()}</span>
+                                            <div className="w-7 h-7 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center shrink-0">
+                                              <span className="font-serif text-xs font-bold text-[#C8A97E]">{likerName.charAt(0).toUpperCase()}</span>
                                             </div>
                                           )}
-                                          <div className="flex flex-col overflow-hidden">
-                                            <span className="font-serif text-[#E8E4DC] text-[15px] leading-tight truncate">{likerName}</span>
-                                            {likerCollege && <span className="font-mono text-[9px] text-[#8A8580] uppercase mt-0.5 truncate">{likerCollege}</span>}
-                                          </div>
+                                          <span className="font-serif text-[#E8E4DC] text-sm truncate">{likerName}</span>
                                         </div>
                                       );
                                     })}
                                   </div>
-
-                                  <div className="absolute top-full right-6 -mt-[1px] border-[6px] border-transparent border-t-[#C8A97E]/30"></div>
-                                  <div className="absolute top-full right-6 -mt-[2px] border-[6px] border-transparent border-t-[#0A0A0F]"></div>
-                                </div>
-                              )}
-
-                              {openCommentPopupId === t.id && (
-                                <div 
-                                  className="absolute bottom-full right-0 mb-3 w-[300px] md:w-[350px] bg-[#0A0A0F] border border-[#C8A97E]/30 rounded-xl shadow-[0_10px_50px_rgba(0,0,0,0.9)] z-50 animate-fade-in flex flex-col"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <div className="flex justify-between items-center p-4 border-b border-white/5">
-                                    <span className="font-serif text-[#C8A97E] text-base tracking-wide">Comments ({t.comments?.length || 0})</span>
-                                    <button onClick={() => setOpenCommentPopupId(null)} className="text-[#8A8580] hover:text-white cursor-pointer transition-colors">
-                                      <X className="w-4 h-4" />
-                                    </button>
-                                  </div>
-
-                                  <div className="max-h-[250px] min-h-[100px] overflow-y-auto custom-scrollbar p-3 flex flex-col gap-3">
-                                    {!t.comments || t.comments.length === 0 ? (
-                                      <div className="text-center font-serif text-[#5A5550] text-sm py-8">
-                                        No comments yet. Start the conversation!
-                                      </div>
-                                    ) : (
-                                      t.comments.map((comment) => (
-                                        <div key={comment.id} className="flex flex-col bg-white/[0.02] p-3 rounded-xl border border-white/[0.02] gap-2">
-                                          <div className="flex items-start gap-3">
-                                            {comment.photoURL ? (
-                                              <img src={comment.photoURL} alt={comment.name} className="w-7 h-7 rounded-full object-cover border border-[#C8A97E]/30 shrink-0" />
-                                            ) : (
-                                              <div className="w-7 h-7 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center shrink-0">
-                                                <span className="font-serif text-xs font-bold text-[#C8A97E]">{comment.name.charAt(0).toUpperCase()}</span>
-                                              </div>
-                                            )}
-                                            <div className="flex flex-col flex-grow">
-                                              <div className="flex items-baseline gap-2 justify-between">
-                                                <span className="font-serif text-[#E8E4DC] text-sm font-semibold">{comment.name}</span>
-                                              </div>
-                                              <span className="font-serif text-[#A09A95] text-[13px] leading-snug mt-0.5 break-words">{comment.text}</span>
-                                              
-                                              <div className="flex items-center gap-4 mt-2">
-                                                <button 
-                                                  onClick={(e) => { e.stopPropagation(); toggleCommentLike(t, comment.id); }}
-                                                  className="flex items-center gap-1 text-[#8A8580] hover:text-[#C8A97E] transition-colors cursor-pointer"
-                                                >
-                                                  <Heart className={`w-3 h-3 ${comment.likes?.includes(auth.currentUser?.uid) ? 'fill-[#C8A97E] text-[#C8A97E]' : ''}`} />
-                                                  <span className="font-mono text-[9px] font-bold">{comment.likes?.length || ''}</span>
-                                                </button>
-                                                
-                                                {allowsComments && (
-                                                  <button 
-                                                    onClick={() => setReplyingTo({ commentId: comment.id, name: comment.name })}
-                                                    className="font-mono text-[9px] uppercase text-[#8A8580] hover:text-[#C8A97E] font-bold tracking-wider cursor-pointer"
-                                                  >
-                                                    Reply
-                                                  </button>
-                                                )}
-                                              </div>
-                                            </div>
-                                          </div>
-
-                                          {comment.replies && comment.replies.map((reply) => (
-                                            <div key={reply.id} className="flex items-start gap-2 bg-white/[0.01] p-2 rounded-lg ml-6 border-l border-[#C8A97E]/20 mt-1 pl-3">
-                                              {reply.photoURL ? (
-                                                <img src={reply.photoURL} alt={reply.name} className="w-5 h-5 rounded-full object-cover border border-[#C8A97E]/20 shrink-0" />
-                                              ) : (
-                                                <div className="w-5 h-5 rounded-full bg-[#141419] border border-[#C8A97E]/20 flex items-center justify-center shrink-0">
-                                                  <span className="font-serif text-[10px] font-bold text-[#C8A97E]">{reply.name.charAt(0).toUpperCase()}</span>
-                                                </div>
-                                              )}
-                                              <div className="flex flex-col">
-                                                <span className="font-serif text-[#E8E4DC] text-xs font-semibold">{reply.name}</span>
-                                                <span className="font-serif text-[#A09A95] text-xs leading-snug mt-0.5 break-words">{reply.text}</span>
-                                              </div>
-                                            </div>
-                                          ))}
-
-                                        </div>
-                                      ))
-                                    )}
-                                  </div>
-
-                                  {allowsComments ? (
-                                    <div className="border-t border-white/5 bg-[#141419]/50 rounded-b-xl p-3 flex flex-col gap-2">
-                                      {replyingTo && (
-                                        <div className="flex justify-between items-center bg-[#C8A97E]/10 border border-[#C8A97E]/20 px-2 py-1 rounded-md">
-                                          <span className="font-mono text-[9px] text-[#C8A97E] uppercase tracking-wider">Replying to {replyingTo.name}...</span>
-                                          <button onClick={() => setReplyingTo(null)} className="text-red-400 hover:text-white"><X className="w-3 h-3" /></button>
-                                        </div>
-                                      )}
-                                      <div className="flex gap-2">
-                                        <input 
-                                          type="text" 
-                                          value={commentText}
-                                          onChange={(e) => setCommentText(e.target.value)}
-                                          placeholder={replyingTo ? `Write a reply...` : "Add a comment..."}
-                                          className="flex-grow bg-[#1A1A24] border border-white/10 rounded-lg px-3 py-2 text-[#E8E4DC] text-sm font-serif focus:outline-none focus:border-[#C8A97E]/50"
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && commentText.trim()) {
-                                              if (replyingTo) handleAddReply(t, replyingTo.commentId);
-                                              else handleAddComment(t);
-                                            }
-                                          }}
-                                        />
-                                        <button 
-                                          onClick={() => {
-                                            if (replyingTo) handleAddReply(t, replyingTo.commentId);
-                                            else handleAddComment(t);
-                                          }}
-                                          disabled={!commentText.trim()}
-                                          className="bg-[#C8A97E] text-black p-2 rounded-lg hover:bg-white transition-colors disabled:opacity-50 cursor-pointer"
-                                        >
-                                          <Send className="w-4 h-4" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="p-3 border-t border-white/5 bg-red-500/5 rounded-b-xl text-center">
-                                      <span className="font-mono text-[10px] text-red-400/80 uppercase tracking-widest">Comments are turned off</span>
-                                    </div>
-                                  )}
                                 </div>
                               )}
                             </div>
                           )}
                         </div>
+
+                        {/* Inline Expandable Comments Section */}
+                        {openCommentPopupId === t.id && (
+                          <div className="mt-4 pt-4 border-t border-white/10 animate-fade-in flex flex-col gap-3">
+                            <div className="flex justify-between items-center px-1">
+                              <span className="font-serif text-[#C8A97E] text-sm font-semibold">
+                                Comments ({t.comments?.length || 0})
+                              </span>
+                              <button 
+                                type="button" 
+                                onClick={() => setOpenCommentPopupId(null)} 
+                                className="text-[#8A8580] hover:text-white text-xs font-mono uppercase tracking-wider"
+                              >
+                                Close
+                              </button>
+                            </div>
+
+                            <div className="max-h-[240px] overflow-y-auto custom-scrollbar flex flex-col gap-2.5 pr-1">
+                              {!t.comments || t.comments.length === 0 ? (
+                                <div className="text-center font-serif text-[#5A5550] text-sm py-4">
+                                  No comments yet. Be the first to share your thoughts!
+                                </div>
+                              ) : (
+                                t.comments.map((comment) => {
+                                  const canDeleteComment = isMyPost || comment.uid === auth.currentUser?.uid;
+                                  return (
+                                    <div key={comment.id} className="bg-white/[0.03] p-3 rounded-xl border border-white/5 flex flex-col gap-1.5">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="flex items-center gap-2">
+                                          {comment.photoURL ? (
+                                            <img src={comment.photoURL} alt={comment.name} className="w-6 h-6 rounded-full object-cover border border-[#C8A97E]/30 shrink-0" />
+                                          ) : (
+                                            <div className="w-6 h-6 rounded-full bg-[#141419] border border-[#C8A97E]/30 flex items-center justify-center shrink-0">
+                                              <span className="font-serif text-[10px] font-bold text-[#C8A97E]">{comment.name?.charAt(0).toUpperCase()}</span>
+                                            </div>
+                                          )}
+                                          <span className="font-serif text-[#E8E4DC] text-xs font-semibold">{comment.name}</span>
+                                        </div>
+
+                                        {canDeleteComment && (
+                                          <button 
+                                            type="button" 
+                                            onClick={() => handleDeleteComment(t, comment.id)} 
+                                            className="text-[#5A5550] hover:text-red-400 p-1 cursor-pointer"
+                                            title="Delete comment"
+                                          >
+                                            <Trash2 size={13} />
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      <p className="font-serif text-[#C4C0BB] text-xs leading-relaxed pl-8 break-words">{comment.text}</p>
+
+                                      <div className="flex items-center gap-4 pl-8 mt-1">
+                                        <button 
+                                          type="button" 
+                                          onClick={() => toggleCommentLike(t, comment.id)}
+                                          className="flex items-center gap-1 text-[#8A8580] hover:text-[#C8A97E] transition-colors cursor-pointer text-[10px] font-mono"
+                                        >
+                                          <Heart className={`w-3 h-3 ${comment.likes?.includes(auth.currentUser?.uid) ? 'fill-[#C8A97E] text-[#C8A97E]' : ''}`} />
+                                          <span>{comment.likes?.length || ''}</span>
+                                        </button>
+
+                                        {allowsComments && (
+                                          <button 
+                                            type="button"
+                                            onClick={() => setReplyingTo({ commentId: comment.id, name: comment.name })}
+                                            className="font-mono text-[9px] uppercase text-[#8A8580] hover:text-[#C8A97E] font-bold tracking-wider cursor-pointer"
+                                          >
+                                            Reply
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      {/* Nested replies */}
+                                      {comment.replies && comment.replies.map((reply) => (
+                                        <div key={reply.id} className="ml-8 mt-1.5 p-2 bg-black/30 rounded-lg border-l-2 border-[#C8A97E]/40 text-xs">
+                                          <div className="flex items-center gap-1.5 mb-1">
+                                            <span className="font-serif text-[#E8E4DC] font-semibold text-[11px]">{reply.name}</span>
+                                          </div>
+                                          <p className="font-serif text-[#A09A95]">{reply.text}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  );
+                                })
+                              )}
+                            </div>
+
+                            {allowsComments ? (
+                              <div className="pt-2 flex flex-col gap-2">
+                                {replyingTo && (
+                                  <div className="flex justify-between items-center bg-[#C8A97E]/10 border border-[#C8A97E]/20 px-2.5 py-1 rounded-lg">
+                                    <span className="font-mono text-[9px] text-[#C8A97E] uppercase tracking-wider">Replying to {replyingTo.name}...</span>
+                                    <button onClick={() => setReplyingTo(null)} className="text-red-400 hover:text-white p-0.5"><X size={12} /></button>
+                                  </div>
+                                )}
+                                <div className="flex gap-2">
+                                  <input 
+                                    type="text" 
+                                    value={commentText}
+                                    onChange={(e) => setCommentText(e.target.value)}
+                                    placeholder={replyingTo ? `Write a reply...` : "Write a kind comment..."}
+                                    className="flex-grow bg-[#141419] border border-white/10 rounded-xl px-3 py-2 text-[#E8E4DC] text-xs font-serif focus:outline-none focus:border-[#C8A97E]/50"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && commentText.trim()) {
+                                        if (replyingTo) handleAddReply(t, replyingTo.commentId);
+                                        else handleAddComment(t);
+                                      }
+                                    }}
+                                  />
+                                  <button 
+                                    type="button"
+                                    onClick={() => {
+                                      if (replyingTo) handleAddReply(t, replyingTo.commentId);
+                                      else handleAddComment(t);
+                                    }}
+                                    disabled={!commentText.trim()}
+                                    className="bg-[#C8A97E] text-black px-3 py-2 rounded-xl hover:bg-white transition-colors disabled:opacity-40 cursor-pointer text-xs"
+                                  >
+                                    <Send size={13} />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="py-2 text-center text-[#8A8580] font-mono text-[10px] uppercase tracking-wider">
+                                Comments are turned off for this story
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                       </div>
                     );
                   })}
@@ -1875,7 +2112,10 @@ const DiaryCalendar = ({ entries, selectedDate, setSelectedDate }) => {
           {blanks.map((_, i) => <div key={`blank-${i}`} className="p-2"></div>)}
           {days.map(day => {
             const formattedDate = getFormattedDate(day);
-            
+            const todayDateStr = new Date().toLocaleDateString('en-IN', {
+              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+            const isToday = formattedDate === todayDateStr;
             const currentEntry = entries.find(e => e.date === formattedDate);
             const hasEntry = !!currentEntry;
             const isSelected = selectedDate === formattedDate;
@@ -1889,9 +2129,10 @@ const DiaryCalendar = ({ entries, selectedDate, setSelectedDate }) => {
                 className={`p-2 w-8 h-8 mx-auto rounded-full flex items-center justify-center font-mono transition-all ${
                   isSelected ? "bg-[#C8A97E] text-black font-bold shadow-[0_0_10px_rgba(200,169,126,0.5)] text-xs"
                   : hasEntry ? "bg-[#C8A97E]/20 text-[#C8A97E] border border-[#C8A97E]/40 hover:bg-[#C8A97E]/30 text-lg hover:scale-110" 
+                  : isToday ? "border border-[#C8A97E]/60 text-[#E8E4DC] font-bold hover:bg-[#C8A97E]/10 text-xs"
                   : "text-[#A09A95] hover:bg-white/5 text-xs"
                 }`}
-                title={hasEntry ? `Entry: ${formattedDate}` : formattedDate}
+                title={hasEntry ? `Entry: ${formattedDate}` : isToday ? `Today: ${formattedDate}` : formattedDate}
               >
                 {displayContent}
               </button>
@@ -1913,24 +2154,48 @@ const DiaryPage = ({ diaryEntries, setDiaryEntries }) => {
 
   const hasWrittenToday = diaryEntries.some(entry => entry.date === todayFormatted);
 
- const handleDeleteToday = async () => {
+  const clearAainaCache = () => {
+    if (auth.currentUser) {
+      localStorage.removeItem(`aaina_date_${auth.currentUser.uid}`);
+      localStorage.removeItem(`aaina_data_${auth.currentUser.uid}`);
+      localStorage.removeItem(`aaina_date_v3_${auth.currentUser.uid}_offset_0`);
+      localStorage.removeItem(`aaina_data_v3_${auth.currentUser.uid}_offset_0`);
+    }
+  };
+
+  const handleDeleteToday = async () => {
     const todayEntry = diaryEntries.find(entry => entry.date === todayFormatted);
     if (todayEntry && todayEntry.id) {
+      if (!window.confirm("Are you sure you want to rewrite today's entry? It will permanently delete what you wrote today.")) return;
       try {
         await deleteDoc(doc(db, "diaries", todayEntry.id));
         setDiaryEntries(diaryEntries.filter(entry => entry.id !== todayEntry.id));
         if (selectedDate === todayFormatted) setSelectedDate(null);
-        
-        if (auth.currentUser) {
-          localStorage.removeItem(`aaina_date_${auth.currentUser.uid}`);
-          localStorage.removeItem(`aaina_data_${auth.currentUser.uid}`);
-        }
+        clearAainaCache();
+        window.dispatchEvent(new Event("diaryUpdated"));
       } catch (error) {
         console.error("Error deleting today's entry:", error);
       }
     }
   };
-const handleSave = async () => {
+
+  const handleDeleteEntry = async (entryToDelete) => {
+    if (!entryToDelete?.id) return;
+    if (!window.confirm(`Delete diary entry from ${entryToDelete.date}? This cannot be undone.`)) return;
+    try {
+      await deleteDoc(doc(db, "diaries", entryToDelete.id));
+      setDiaryEntries(diaryEntries.filter(entry => entry.id !== entryToDelete.id));
+      if (selectedDate === entryToDelete.date && !diaryEntries.some(e => e.date === entryToDelete.date && e.id !== entryToDelete.id)) {
+        setSelectedDate(null);
+      }
+      clearAainaCache();
+      window.dispatchEvent(new Event("diaryUpdated"));
+    } catch (error) {
+      console.error("Error deleting diary entry:", error);
+    }
+  };
+
+  const handleSave = async () => {
     if (!newEntry.trim() || !auth.currentUser) return;
     setIsSaving(true);
     
@@ -1976,6 +2241,7 @@ const handleSave = async () => {
   
       await addDoc(collection(db, "diaries"), entryData);
       
+      clearAainaCache();
       window.dispatchEvent(new Event("diaryUpdated"));
       
       setNewEntry(""); 
@@ -1986,12 +2252,13 @@ const handleSave = async () => {
       setIsSaving(false);
     }
   };
+
   const filteredEntries = selectedDate 
     ? diaryEntries.filter(e => e.date === selectedDate)
     : diaryEntries;
 
   return (
-    <div className="animate-fade-in pt-32 pb-20 px-6 md:px-12 lg:px-20 min-h-screen">
+    <div className="animate-fade-in pt-32 pb-24 md:pb-20 px-6 md:px-12 lg:px-20 min-h-screen">
       <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-10">
         <div className="w-full lg:w-2/3 flex flex-col">
           <FadeInSection>
@@ -2058,7 +2325,7 @@ const handleSave = async () => {
             <DiaryCalendar entries={diaryEntries} selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
             
             <h3 className="font-serif text-2xl text-[#E8E4DC] mb-6 border-b border-[#C8A97E]/20 pb-4 flex justify-between items-end">
-              <span>{selectedDate ? `Entries for ${selectedDate.split(',')[1]}` : "Past Pages"}</span>
+              <span>{selectedDate ? `Entries for ${selectedDate.split(',')[1] || selectedDate}` : "Past Pages"}</span>
               {selectedDate && (
                 <button onClick={() => setSelectedDate(null)} className="font-mono text-[10px] text-[#8A8580] hover:text-[#C8A97E] uppercase transition-colors cursor-pointer mb-1">
                   Clear Filter
@@ -2066,22 +2333,32 @@ const handleSave = async () => {
               )}
             </h3>
             
-            <div className="space-y-6 overflow-y-auto max-h-[400px] custom-scrollbar pr-2">
+            <div className="space-y-4 overflow-y-auto max-h-[400px] custom-scrollbar pr-2">
               {filteredEntries.length === 0 ? (
                 <div className="text-center py-10 border border-dashed border-white/10 rounded-xl text-[#5A5550] font-serif">
                   {selectedDate ? "No entries found for this date." : "Your diary is empty. \n Take a deep breath and start writing."}
                 </div>
               ) : (
                 filteredEntries.map((entry) => (
-                  <div key={entry.id} className="bg-white/[0.02] border border-white/[0.05] p-5 rounded-xl hover:border-[#C8A97E]/30 transition-colors group cursor-default shadow-sm">
-                    <div className="flex justify-between items-baseline mb-4 border-b border-white/5 pb-3">
+                  <div key={entry.id} className="bg-white/[0.02] border border-white/[0.05] p-5 rounded-xl hover:border-[#C8A97E]/30 transition-colors group relative cursor-default shadow-sm">
+                    <div className="flex justify-between items-start mb-3 border-b border-white/5 pb-2.5">
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl bg-white/5 w-10 h-10 rounded-full flex items-center justify-center border border-white/10 group-hover:border-[#C8A97E]/40 transition-colors shadow-sm" title="AI Mood Analysis">
+                        <span className="text-2xl bg-white/5 w-10 h-10 rounded-full flex items-center justify-center border border-white/10 group-hover:border-[#C8A97E]/40 transition-colors shadow-sm flex-shrink-0" title="AI Mood Analysis">
                           {entry.moodEmoji || "📓"}
                         </span>
-                        <div className="font-serif text-[#C8A97E] text-lg font-bold">{entry.date}</div>
+                        <div>
+                          <div className="font-serif text-[#C8A97E] text-base font-bold leading-tight">{entry.date}</div>
+                          <div className="font-mono text-[10px] text-[#5A5550] tracking-widest mt-0.5">{entry.time}</div>
+                        </div>
                       </div>
-                      <div className="font-mono text-[10px] text-[#5A5550] tracking-widest">{entry.time}</div>
+                      <button
+                        onClick={() => handleDeleteEntry(entry)}
+                        className="text-[#8A8580] hover:text-red-400 p-1.5 rounded-md hover:bg-red-500/10 transition-colors opacity-70 sm:opacity-0 group-hover:opacity-100 cursor-pointer"
+                        title="Delete entry"
+                        aria-label="Delete entry"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                     <p className="font-serif text-[#C4C0BB] leading-relaxed whitespace-pre-wrap line-clamp-4 group-hover:line-clamp-none transition-all duration-300">
                       {entry.content}
@@ -2655,6 +2932,7 @@ useEffect(() => {
     return;
   }
 
+  let fallbackUnsubscribe = null;
   const q = query(
     collection(db, "notifications"),
     where("userId", "==", auth.currentUser.uid),
@@ -2667,13 +2945,38 @@ useEffect(() => {
     snapshot.forEach((doc) => {
       loadedNotifs.push({ id: doc.id, ...doc.data() });
     });
-    console.log("🔔 Notifications fetched:", loadedNotifs);
     setRealtimeNotifications(loadedNotifs);
   }, (error) => {
-    console.error("❌ Error listening to notifications:", error);
+    console.warn("⚠️ Notification indexed query failed (likely missing composite index), attempting fallback sort:", error?.message);
+    try {
+      const qFallback = query(
+        collection(db, "notifications"),
+        where("userId", "==", auth.currentUser.uid),
+        limit(20)
+      );
+      fallbackUnsubscribe = onSnapshot(qFallback, (fbSnapshot) => {
+        const loadedNotifs = [];
+        fbSnapshot.forEach((doc) => {
+          loadedNotifs.push({ id: doc.id, ...doc.data() });
+        });
+        loadedNotifs.sort((a, b) => {
+          const tA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (a.createdAt || 0);
+          const tB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (b.createdAt || 0);
+          return tB - tA;
+        });
+        setRealtimeNotifications(loadedNotifs.slice(0, 10));
+      }, (fbErr) => {
+        console.error("❌ Fallback notification query failed:", fbErr);
+      });
+    } catch (e) {
+      console.error("❌ Error setting up fallback listener:", e);
+    }
   });
 
-  return () => unsubscribe();
+  return () => {
+    unsubscribe();
+    if (fallbackUnsubscribe) fallbackUnsubscribe();
+  };
 }, [isLoggedIn]);
   const [userStories, setUserStories] = useState([]);
   const [diaryEntries, setDiaryEntries] = useState([]);
@@ -2900,6 +3203,52 @@ const renderPage = () => {
       <main className="min-h-screen">
         {renderPage()}
       </main>
+
+      {/* Mobile Bottom Navigation Bar (Thumb-friendly 1-tap navigation for mobile devices) */}
+      {isLoggedIn && !needsProfileSetup && currentPage !== "landing" && currentPage !== "login" && currentPage !== "chat" && (
+        <nav 
+          aria-label="Mobile Navigation"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0A0A0F]/95 backdrop-blur-2xl border-t border-white/10 px-2 py-2 shadow-2xl flex items-center justify-around"
+        >
+          {[
+            { id: "home", label: "Home", icon: Sparkles },
+            { id: "stories", label: "Stories", icon: Globe },
+            { id: "diary", label: "Diary", icon: BookOpen },
+            { id: "report", label: "Canvas", icon: BarChart },
+            { id: "chat", label: "Sathi", icon: Brain, highlight: true },
+          ].map((item) => {
+            const Icon = item.icon;
+            const isActive = currentPage === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  setCurrentPage(item.id);
+                }}
+                className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all cursor-pointer relative ${
+                  isActive 
+                    ? "text-[#C8A97E]" 
+                    : item.highlight 
+                      ? "text-[#C8A97E]/80 hover:text-[#C8A97E]" 
+                      : "text-[#8A8580] hover:text-[#E8E4DC]"
+                }`}
+              >
+                {isActive && (
+                  <span className="absolute -top-1 w-6 h-0.5 bg-[#C8A97E] rounded-full shadow-[0_0_8px_#C8A97E]" />
+                )}
+                <div className={`p-1 rounded-lg ${item.highlight && !isActive ? "bg-[#C8A97E]/10" : ""}`}>
+                  <Icon className={`w-5 h-5 ${item.highlight ? "animate-pulse" : ""}`} />
+                </div>
+                <span className="font-mono text-[9px] tracking-wider uppercase mt-0.5 font-medium">
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
       {isLoggedIn && currentPage !== "chat" && <Footer />}
     </div>
   );

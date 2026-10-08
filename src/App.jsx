@@ -3006,25 +3006,31 @@ const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
   }, []);
   const requestNotificationPermission = async (user) => {
     try {
-      const permission = await Notification.requestPermission();
-      if (permission === "granted") {
-        
-        const currentToken = await getToken(messaging, { 
-          vapidKey: "BDBEe-7SAS90LwTMU_UoA0aafej2PRiFJfbclGssYNWM0uoajoi2h1TPK_gQdOoh9s7o3fwl-sZs6F2NbR7OG5Q" 
-        });
+      // Only request if supported and not already denied
+      if (!("Notification" in window)) return;
+      if (Notification.permission === "denied") return;
 
-        if (currentToken) {
-          console.log("FCM Token Generated:", currentToken);
-          
-         await setDoc(doc(db, "users", user.uid), {
-            fcmToken: currentToken,
-            name: user.displayName || "Darpan Student",
-            email: user.email
-          }, { merge: true }); 
-        }
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") return;
+
+      const currentToken = await getToken(messaging, { 
+        vapidKey: "BDBEe-7SAS90LwTMU_UoA0aafej2PRiFJfbclGssYNWM0uoajoi2h1TPK_gQdOoh9s7o3fwl-sZs6F2NbR7OG5Q" 
+      });
+
+      if (currentToken) {
+        console.log("✅ FCM Token registered for this device:", currentToken.slice(0, 20) + "...");
+        // Save as array so the user can receive notifications on ALL their devices/browsers
+        // Cloud Functions read `fcmTokens` (plural) to send to all registered devices
+        await setDoc(doc(db, "users", user.uid), {
+          fcmTokens: arrayUnion(currentToken),   // multi-device: each device appended here
+          fcmToken: currentToken,                  // legacy single-token field kept for compatibility
+          name: user.displayName || "Darpan Student",
+          email: user.email
+        }, { merge: true });
       }
     } catch (error) {
-      console.error("Error retrieving token:", error);
+      // Gracefully ignore — e.g., iframe restrictions, service worker not ready
+      console.warn("FCM token registration skipped:", error?.message || error);
     }
   };
 

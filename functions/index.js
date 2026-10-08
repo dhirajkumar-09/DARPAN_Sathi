@@ -1,20 +1,248 @@
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const admin = require("firebase-admin");
 const nodemailer = require("nodemailer");
 
 admin.initializeApp();
 const db = admin.firestore();
 
-// Configure Nodemailer with your system email credentials
+// Configure Nodemailer
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "darpansathi01@gmail.com", // Replace with your app's official Gmail
-    pass: "nmmk wccf ujnb fzfe"     // Replace with your 16-character App Password
+    user: "darpansathi01@gmail.com",
+    pass: "nmmk wccf ujnb fzfe"
   }
 });
 
-// Automated Cron Job: Triggers every Sunday at 09:00 AM
+// ═══════════════════════════════════════════════════════════════
+// HELPER: Send FCM push notifications to a list of FCM tokens
+// ═══════════════════════════════════════════════════════════════
+async function sendPushNotifications(tokens, title, body, data = {}) {
+  if (!tokens || tokens.length === 0) return;
+
+  // FCM allows max 500 tokens per multicast batch
+  const chunks = [];
+  for (let i = 0; i < tokens.length; i += 500) {
+    chunks.push(tokens.slice(i, i + 500));
+  }
+
+  for (const chunk of chunks) {
+    const message = {
+      notification: { title, body },
+      data: { ...data, click_action: "FLUTTER_NOTIFICATION_CLICK" },
+      webpush: {
+        notification: {
+          title,
+          body,
+          icon: "/logo2.png",
+          badge: "/logo2.png",
+          vibrate: [200, 100, 200],
+          requireInteraction: false,
+        },
+        fcmOptions: { link: "https://darpan-sathi.vercel.app/" }
+      },
+      tokens: chunk,
+    };
+
+    try {
+      const response = await admin.messaging().sendEachForMulticast(message);
+      console.log(`✅ Push sent: ${response.successCount} success, ${response.failureCount} failures`);
+
+      // Remove invalid / expired tokens automatically
+      const staleTokens = [];
+      response.responses.forEach((res, idx) => {
+        if (!res.success) {
+          const code = res.error?.code;
+          if (
+            code === "messaging/invalid-registration-token" ||
+            code === "messaging/registration-token-not-registered"
+          ) {
+            staleTokens.push(chunk[idx]);
+          }
+        }
+      });
+
+      if (staleTokens.length > 0) {
+        console.log(`🗑️ Removing ${staleTokens.length} stale token(s)...`);
+        const snapshot = await db.collection("users")
+          .where("fcmTokens", "array-contains-any", staleTokens)
+          .get();
+
+        const batch = db.batch();
+        snapshot.forEach(docSnap => {
+          const currentTokens = docSnap.data().fcmTokens || [];
+          const cleanedTokens = currentTokens.filter(t => !staleTokens.includes(t));
+          batch.update(docSnap.ref, { fcmTokens: cleanedTokens });
+        });
+        await batch.commit();
+      }
+    } catch (err) {
+      console.error("❌ FCM send error:", err);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPER: Collect FCM tokens from all users, excluding blocked ones
+// ═══════════════════════════════════════════════════════════════
+async function getAllTokensExcludingBlocked(senderUid) {
+  const usersSnap = await db.collection("users").get();
+
+  // Fetch who has blocked the sender
+  const blockedSnap = await db.collection("blockedUsers")
+    .where("blockedUserId", "==", senderUid)
+    .get();
+  const blockerUids = new Set(blockedSnap.docs.map(d => d.data().blockedBy));
+
+  // Also fetch whom the sender has blocked
+  const senderBlockedSnap = await db.collection("blockedUsers")
+    .where("blockedBy", "==", senderUid)
+    .get();
+  const senderBlockedUids = new Set(senderBlockedSnap.docs.map(d => d.data().blockedUserId));
+
+  const tokens = [];
+  usersSnap.forEach(userDoc => {
+    const uid = userDoc.id;
+    // Skip: the sender themselves, anyone who blocked sender, anyone sender blocked
+    if (uid === senderUid) return;
+    if (blockerUids.has(uid)) return;
+    if (senderBlockedUids.has(uid)) return;
+
+    const userTokens = userDoc.data().fcmTokens || [];
+    tokens.push(...userTokens);
+  });
+
+  return [...new Set(tokens)]; // deduplicate
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CLOUD FUNCTION 1: New Public Story → Broadcast push to everyone
+// Trigger: when a new document is created in "stories" collection
+// ═══════════════════════════════════════════════════════════════
+exports.onNewStory = onDocumentCreated("stories/{storyId}", async (event) => {
+  const story = event.data.data();
+  if (!story) return;
+
+  // Only notify for public stories
+  if (story.isPrivate === true) {
+    console.log("Private story posted, skipping broadcast.");
+    return;
+  }
+
+  const senderUid = story.userId;
+  const senderName = story.name || "A DARPAN student";
+  const preview = story.quote
+    ? (story.quote.length > 80 ? story.quote.slice(0, 80) + "…" : story.quote)
+    : "";
+
+  console.log(`📢 New public story by ${senderName} (${senderUid}). Broadcasting push...`);
+
+  // Write an in-app Firestore notification for all users (non-blocked) too
+  const tokens = await getAllTokensExcludingBlocked(senderUid);
+
+  if (tokens.length === 0) {
+    console.log("No eligible push tokens found. Skipping.");
+    return;
+  }
+
+  await sendPushNotifications(
+    tokens,
+    `📖 New Story by ${senderName}`,
+    preview || "Someone shared their experience on DARPAN. Come read it!",
+    { type: "new_story", storyId: event.params.storyId, senderUid }
+  );
+});
+
+// ═══════════════════════════════════════════════════════════════
+// CLOUD FUNCTION 2: Reaction (Heart/Like) on a story
+// Trigger: when "stories/{storyId}" document is updated
+// We detect a new like by comparing before/after likes array length
+// ═══════════════════════════════════════════════════════════════
+exports.onStoryReaction = onDocumentUpdated("stories/{storyId}", async (event) => {
+  const before = event.data.before.data();
+  const after = event.data.after.data();
+  if (!before || !after) return;
+
+  const beforeLikes = before.likes || [];
+  const afterLikes = after.likes || [];
+
+  // Only act if someone added a new like (not removed)
+  if (afterLikes.length <= beforeLikes.length) return;
+
+  // Find the new like entry
+  const beforeUids = new Set(beforeLikes.map(l => (typeof l === "string" ? l : l.uid)));
+  const newLike = afterLikes.find(l => {
+    const uid = typeof l === "string" ? l : l.uid;
+    return !beforeUids.has(uid);
+  });
+
+  if (!newLike) return;
+
+  const reactorUid = typeof newLike === "string" ? newLike : newLike.uid;
+  const reactorName = typeof newLike === "string" ? "Someone" : (newLike.name || "Someone");
+  const storyOwnerId = after.userId;
+
+  // Don't notify if they reacted to their own story
+  if (reactorUid === storyOwnerId) return;
+
+  console.log(`❤️ ${reactorName} reacted to story ${event.params.storyId}. Notifying owner ${storyOwnerId}...`);
+
+  // Get the story owner's FCM tokens
+  const ownerDoc = await db.collection("users").doc(storyOwnerId).get();
+  if (!ownerDoc.exists) {
+    console.log("Story owner user doc not found.");
+    return;
+  }
+
+  const ownerTokens = ownerDoc.data().fcmTokens || [];
+  if (ownerTokens.length === 0) {
+    console.log("Story owner has no FCM tokens. Skipping push.");
+    return;
+  }
+
+  // Check if the reactor is blocked by the owner
+  const blockCheck = await db.collection("blockedUsers")
+    .where("blockedBy", "==", storyOwnerId)
+    .where("blockedUserId", "==", reactorUid)
+    .get();
+
+  if (!blockCheck.empty) {
+    console.log("Reactor is blocked by story owner. Skipping notification.");
+    return;
+  }
+
+  const storyPreview = after.quote
+    ? (after.quote.length > 50 ? after.quote.slice(0, 50) + "…" : after.quote)
+    : "your story";
+
+  await sendPushNotifications(
+    ownerTokens,
+    `❤️ ${reactorName} reacted to your story!`,
+    `"${storyPreview}"`,
+    { type: "reaction", storyId: event.params.storyId, reactorUid }
+  );
+
+  // Also write an in-app Firestore notification for the story owner
+  try {
+    await db.collection("notifications").add({
+      userId: storyOwnerId,
+      type: "reaction",
+      message: `❤️ ${reactorName} reacted to your story: "${storyPreview}"`,
+      storyId: event.params.storyId,
+      reactorUid,
+      reactorName,
+      read: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (err) {
+    console.error("Error writing in-app notification:", err);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// CLOUD FUNCTION 3: Automated Weekly Report Email (unchanged)
+// ═══════════════════════════════════════════════════════════════
 exports.sendWeeklyReport = onSchedule("every sunday 09:00", async (event) => {
   try {
     const usersSnapshot = await db.collection("users").get();
@@ -22,7 +250,6 @@ exports.sendWeeklyReport = onSchedule("every sunday 09:00", async (event) => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    // Rays of Light collection (Motivational quotes)
     const raysOfLightCollection = [
       "Every day is a fresh start. Take a deep breath and begin again.",
       "You are much stronger than you think you are.",
@@ -39,13 +266,11 @@ exports.sendWeeklyReport = onSchedule("every sunday 09:00", async (event) => {
 
       if (!userEmail) continue;
 
-      // Fetch user's diary entries from the last 7 days
       const diariesSnapshot = await db.collection("diaries")
         .where("userId", "==", userId)
         .where("createdAt", ">=", oneWeekAgo)
         .get();
 
-      // Skip if the user did not log anything this week
       if (diariesSnapshot.empty) continue;
 
       let bestDay = null;
@@ -91,7 +316,6 @@ exports.sendWeeklyReport = onSchedule("every sunday 09:00", async (event) => {
           </li>`;
       });
 
-      // Calculate dynamic Sathi's Tip based on average mood score
       const averageScore = totalMoodScore / totalDaysLogged;
       let sathiTip = "";
 
@@ -103,10 +327,8 @@ exports.sendWeeklyReport = onSchedule("every sunday 09:00", async (event) => {
         sathiTip = "It looks like this week was a bit heavy for you. Please remember to be gentle with yourself. Take things one day at a time, and do not hesitate to rest.";
       }
 
-      // Select a random quote for Rays of Light
       const randomRayOfLight = raysOfLightCollection[Math.floor(Math.random() * raysOfLightCollection.length)];
 
-      // Premium Dark Gold responsive HTML email template
       const emailContentHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #333; border-radius: 12px; background-color: #141419; color: #e2e8f0;">
           
@@ -142,7 +364,7 @@ exports.sendWeeklyReport = onSchedule("every sunday 09:00", async (event) => {
       `;
 
       await transporter.sendMail({
-        from: '"Darpan AI" <your-system-email@gmail.com>',
+        from: '"Darpan AI" <darpansathi01@gmail.com>',
         to: userEmail,
         subject: "Your Darpan Weekly Reflection & Sathi's Tip",
         html: emailContentHtml

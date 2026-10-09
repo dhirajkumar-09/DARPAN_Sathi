@@ -866,7 +866,7 @@ const ChatPage = ({ messages, setMessages }) => {
   const clearChat = () => {
     setMessages([{
         role: "model",
-        parts: [{ text: "Namaste! I am Sathi. We've started a fresh session. How are you feeling right now?" }]
+        parts: [{ text: "Hello! I am Sathi. We've started a fresh session. How are you feeling right now?" }]
     }]);
     
     if (window.speechSynthesis) {
@@ -973,7 +973,7 @@ const ChatPage = ({ messages, setMessages }) => {
             </button>
             {/* Reset */}
             <button type="button" onClick={() => {
-                setMessages([{ role: 'model', parts: [{ text: "Namaste! Fresh start. How are you feeling right now?" }], ts: Date.now() }]);
+                setMessages([{ role: 'model', parts: [{ text: "Hello! Fresh start. How are you feeling right now?" }], ts: Date.now() }]);
                 setCurrentMood('neutral');
                 setShowCrisisPanel(false);
                 setShowQuickPrompts(true);
@@ -1338,7 +1338,7 @@ const HomePage = ({ setPage, announcement }) => {
               {/* Quick conversation starters */}
               <div className="px-3 pt-2 pb-1 bg-[#0A0A0F]/90 border-t border-white/5 flex gap-1.5 overflow-x-auto custom-scrollbar">
                 {[
-                  "Exams stress ho raha hai 😓",
+                  "Feeling exam stress 😓",
                   "Feeling calm today ✨",
                   "Tell me something peaceful 🌿"
                 ].map((pill, idx) => (
@@ -3285,7 +3285,7 @@ const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
   const [chatMessages, setChatMessages] = useState([
     {
       role: "model",
-      parts: [{ text: "Namaste! I am Sathi. I am here to listen, whether you want to talk about exams, stress, or just your day. You can type or use the microphone to speak to me in English, Hindi, or Hinglish. How are you feeling right now?" }]
+      parts: [{ text: "Hello! I am Sathi. I am here to listen, whether you want to talk about exams, stress, or just your day. You can type or use the microphone to speak to me in English. How are you feeling right now?" }]
     }
   ]);
 // Service Worker Registration — enables background push notifications
@@ -3621,7 +3621,7 @@ const renderPage = () => {
             <div className="flex-1 min-w-0">
               <h4 className="font-serif text-[#C8A97E] text-base font-semibold leading-tight">Turn on Background Notifications</h4>
               <p className="font-mono text-xs text-[#E8E4DC]/80 mt-1 leading-relaxed">
-                Jab DARPAN band ho tab bhi comments & replies ka popup screen par aayega — ek tap me khol sakein.
+                Receive instant notifications for comments and replies even when DARPAN is closed.
               </p>
               <div className="flex items-center gap-2.5 mt-3">
                 <button
@@ -3630,7 +3630,7 @@ const renderPage = () => {
                     if (ok) {
                       setPushToast({
                         title: "🔔 Notifications Enabled!",
-                        body: "Aapko ab DARPAN band hone par bhi popups milenge.",
+                        body: "Notifications enabled! You will now receive background alerts even when DARPAN is closed.",
                         link: "/?page=stories"
                       });
                     }

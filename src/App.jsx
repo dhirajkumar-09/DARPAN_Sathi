@@ -863,12 +863,25 @@ const ChatPage = ({ messages, setMessages }) => {
     }
   };
 
-  const clearChat = () => {
+  const clearChat = async () => {
+    if (!window.confirm("Are you sure you want to clear your conversation history with Sathi?")) return;
+
     setMessages([{
         role: "model",
-        parts: [{ text: "Hello! I am Sathi. We've started a fresh session. How are you feeling right now?" }]
+        parts: [{ text: "Hello! Fresh start. How are you feeling right now?" }]
     }]);
-    
+
+    if (auth.currentUser) {
+      try {
+        const q = query(collection(db, "chats"), where("userId", "==", auth.currentUser.uid));
+        const snapshot = await getDocs(q);
+        const batchDeletes = snapshot.docs.map(docSnap => deleteDoc(doc(db, "chats", docSnap.id)));
+        await Promise.all(batchDeletes);
+      } catch (err) {
+        console.error("Error deleting chat history from Firestore:", err);
+      }
+    }
+
     if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
     }
@@ -3425,6 +3438,52 @@ const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
       });
       setUserStories(loaded);
     }, (err) => console.warn("Real-time stories error:", err));
+    return () => unsub();
+  }, [isLoggedIn]);
+
+  // Real-time Sathi chats listener — restores full chat history from Firestore on login & syncs live
+  useEffect(() => {
+    if (!isLoggedIn || !auth.currentUser) {
+      setChatMessages([
+        {
+          role: "model",
+          parts: [{ text: "Hello! I am Sathi. I am here to listen, whether you want to talk about exams, stress, or just your day. You can type or use the microphone to speak to me in English. How are you feeling right now?" }]
+        }
+      ]);
+      return;
+    }
+
+    const q = query(collection(db, "chats"), where("userId", "==", auth.currentUser.uid));
+    const unsub = onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) {
+        setChatMessages([
+          {
+            role: "model",
+            parts: [{ text: "Hello! I am Sathi. I am here to listen, whether you want to talk about exams, stress, or just your day. You can type or use the microphone to speak to me in English. How are you feeling right now?" }]
+          }
+        ]);
+        return;
+      }
+
+      const loaded = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const ts = data.createdAt?.seconds 
+          ? data.createdAt.seconds * 1000 
+          : (data.createdAt ? new Date(data.createdAt).getTime() : Date.now());
+        loaded.push({
+          id: docSnap.id,
+          role: data.role || "user",
+          parts: [{ text: data.text || "" }],
+          ts: ts
+        });
+      });
+
+      // Sort chronologically (oldest at top, newest at bottom)
+      loaded.sort((a, b) => a.ts - b.ts);
+      setChatMessages(loaded);
+    }, (err) => console.warn("Real-time chats error:", err));
+
     return () => unsub();
   }, [isLoggedIn]);
 useEffect(() => {
